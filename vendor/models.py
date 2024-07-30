@@ -57,19 +57,19 @@ class Product(models.Model):
 
     # Status
     status = models.BooleanField(default=True)
+    track_quantity = models.BooleanField(default=True)
 
     # Images
     thumbnail = models.CharField(
         max_length=200, default=None, blank=True, null=True)
-    roomsets = models.JSONField(default=dict, blank=True, null=True)
+    roomset = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
 
     # Tags
     tags = models.CharField(
         max_length=200, default=None, blank=True, null=True)
 
     # Meta
-    track_quantity = models.BooleanField(default=True)
-    free_shipping = models.BooleanField(default=True)
     min_order_qty = models.IntegerField(default=0, null=True, blank=True)
     order_increment = models.IntegerField(default=0, null=True, blank=True)
 

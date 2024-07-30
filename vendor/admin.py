@@ -52,6 +52,7 @@ class ProductAdmin(admin.ModelAdmin):
         'price',
         'quantity',
         'weight',
+        'status',
         'product_id',
         'variant_id',
     ]
@@ -61,7 +62,6 @@ class ProductAdmin(admin.ModelAdmin):
         'category',
         'status',
         'track_quantity',
-        'free_shipping',
     ]
 
     search_fields = [

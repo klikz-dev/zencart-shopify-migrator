@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -64,3 +65,11 @@ def to_handle(text):
         return handle.strip('-')
     else:
         return ""
+
+
+def find_file(filename, search_path):
+    search_directory = Path(search_path)
+    for path in search_directory.rglob(filename):
+        if path.is_file():
+            return str(path)
+    return None

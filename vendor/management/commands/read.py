@@ -4,7 +4,7 @@ import pymysql.cursors
 from pathlib import Path
 from tqdm import tqdm
 
-from utils.common import to_int, to_float, to_text
+from utils.common import to_int, to_float, to_text, find_file
 from utils.feed import read_excel
 from vendor.models import Product
 
@@ -98,12 +98,15 @@ class Processor:
                         "Product - ", "").strip()
                     category = to_text(feed['category']).replace(
                         "<b>", "").replace("</b>", "").strip()
+                    free_shipping = to_int(feed['free_shipping']) == 1
 
                     tags = []
                     if type:
                         tags.append(type)
                     if category:
                         tags.append(category)
+                    if free_shipping:
+                        tags.append("Free Shipping")
                     tags = ",".join(tags)
 
                     product = Product.objects.create(
@@ -120,11 +123,11 @@ class Processor:
                         weight=to_int(feed['weight']),
 
                         status=to_int(feed['status']) == 1,
-
-                        thumbnail=to_text(feed['image']),
-
                         track_quantity=to_int(feed['track_quantity']) == 1,
-                        free_shipping=to_int(feed['free_shipping']) == 1,
+
+                        thumbnail=f"https://vinsrare.com/images/{
+                            to_text(feed['image'])}",
+
                         min_order_qty=to_int(feed['min_order_qty']),
                         order_increment=to_int(feed['order_increment']),
                     )
@@ -169,6 +172,7 @@ class Processor:
             product.name = to_text(row['name'])
             product.type = to_text(row['type'])
             product.status = to_text(row['status']) == "On"
+            product.roomset = find_file(to_text(row['image_2']), IMAGEDIR)
 
             product.pre_arrival = to_text(row['pre_arrival'])
             product.vintage = to_text(row['vintage'])
@@ -180,7 +184,6 @@ class Processor:
             product.disgorged = to_text(row['disgorged'])
             product.dosage = to_text(row['dosage'])
             product.alc = to_text(row['alc'])
-            product.roomsets = [to_text(row['image_2'])]
 
             product.save()
 
