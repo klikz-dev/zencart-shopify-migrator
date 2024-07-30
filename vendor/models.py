@@ -35,24 +35,20 @@ class Tag(models.Model):
 class Product(models.Model):
     # Primary
     sku = models.CharField(max_length=200, primary_key=True)
-    title = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
-    handle = models.CharField(
+    name = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     description = models.TextField(
         max_length=5000, default=None, blank=True, null=True)
-    barcode = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
 
     # Category
-    vendor = models.ForeignKey(
-        Vendor, related_name="products", on_delete=models.CASCADE, blank=False, null=False)
-    type = models.ForeignKey(
-        Type, related_name="products", on_delete=models.CASCADE, blank=False, null=False)
-    tags = models.ManyToManyField(Tag, related_name="products")
+    vendor = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    type = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    category = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
 
     # Pricing
-    cost = models.FloatField(default=0, blank=False, null=False)
     price = models.FloatField(default=0, blank=True, null=True)
 
     # Inventory & Shipping
@@ -62,14 +58,40 @@ class Product(models.Model):
     # Status
     status = models.BooleanField(default=True)
 
-    # Variant
-    option_name = models.CharField(
+    # Images
+    thumbnail = models.CharField(
         max_length=200, default=None, blank=True, null=True)
-    option_value = models.CharField(
+    roomsets = models.JSONField(default=dict, blank=True, null=True)
+
+    # Tags
+    tags = models.CharField(
         max_length=200, default=None, blank=True, null=True)
 
-    # Attributes
-    meta_attributes = models.JSONField(default=dict, blank=True, null=True)
+    # Meta
+    track_quantity = models.BooleanField(default=True)
+    free_shipping = models.BooleanField(default=True)
+    min_order_qty = models.IntegerField(default=0, null=True, blank=True)
+    order_increment = models.IntegerField(default=0, null=True, blank=True)
+
+    pre_arrival = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    vintage = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    varietal = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    region = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    sub_region = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    vineyard = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    size = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    disgorged = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    dosage = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    alc = models.CharField(max_length=200, default=None, blank=True, null=True)
 
     # Shopify
     product_id = models.CharField(
@@ -78,7 +100,7 @@ class Product(models.Model):
         max_length=200, default=None, blank=True, null=True)
 
     def __str__(self):
-        return self.title
+        return self.name
 
 
 class Image(models.Model):
@@ -157,7 +179,7 @@ class Order(models.Model):
         max_length=200, default=None, null=True, blank=True)
 
     def __str__(self):
-        return self.order_no
+        return self.customer.email
 
 
 class LineItem(models.Model):
@@ -171,4 +193,4 @@ class LineItem(models.Model):
     quantity = models.IntegerField(default=1, null=False, blank=False)
 
     def __str__(self):
-        return self.order.order_no
+        return self.order.customer.email

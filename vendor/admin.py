@@ -44,61 +44,32 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    class ImageInline(admin.StackedInline):
-        model = Image
-        extra = 0
-
-        fields = [
-            'path',
-        ]
-
     list_display = [
         'sku',
-        'title',
-        'cost',
+        'name',
+        'type',
+        'category',
         'price',
-        'option_name',
-        'option_value',
+        'quantity',
+        'weight',
         'product_id',
         'variant_id',
     ]
 
     list_filter = [
-        'type__name',
+        'type',
+        'category',
         'status',
-        'tags',
+        'track_quantity',
+        'free_shipping',
     ]
 
     search_fields = [
         'sku',
-        'title',
-        'handle',
+        'name',
         'description',
-        'barcode',
         'product_id',
         'variant_id',
-    ]
-
-    inlines = [ImageInline]
-
-
-@admin.register(Image)
-class ImageAdmin(admin.ModelAdmin):
-    autocomplete_fields = [
-        'product',
-    ]
-
-    list_display = [
-        'path',
-        'product',
-    ]
-
-    list_filter = [
-        'product__type__name',
-    ]
-
-    search_fields = [
-        'path',
     ]
 
 
