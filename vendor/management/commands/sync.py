@@ -20,6 +20,9 @@ class Command(BaseCommand):
         if "products" in options['functions']:
             processor.products()
 
+        if "collections" in options['functions']:
+            processor.collections()
+
 
 class Processor:
     def __init__(self):
@@ -87,3 +90,31 @@ class Processor:
         #     sync_product(index, product)
 
         common.thread(rows=products, function=sync_product)
+
+    def collections(self):
+        tags = Product.objects.values_list('tags', flat=True).distinct()
+        types = Product.objects.values_list('type', flat=True).distinct()
+
+        collections = []
+
+        for tag in tags:
+            for t in tag.split(","):
+                if t not in collections:
+                    collections.append(t)
+
+        for type in types:
+            if type and type not in collections:
+                collections.append(type)
+
+        for index, collection in enumerate(collections):
+            rules = [{
+                'column': "tag",
+                'relation': "equals",
+                'condition': f"{collection}",
+            }]
+
+            shopify_collection = shopify.create_collection(
+                title=collection, rules=rules, thread=index)
+
+            print(
+                f"Collection {shopify_collection.id} has been setup successfully")

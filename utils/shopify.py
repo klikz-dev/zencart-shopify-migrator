@@ -226,7 +226,7 @@ def create_collection(title, rules, thread=None):
 
     with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
 
-        shopify_collection = shopify.Collection()
+        shopify_collection = shopify.SmartCollection()
 
         shopify_collection.title = title
         shopify_collection.rules = rules
