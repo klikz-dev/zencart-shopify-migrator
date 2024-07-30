@@ -4,9 +4,9 @@ import pymysql.cursors
 from pathlib import Path
 from tqdm import tqdm
 
-from utils.common import to_int, to_float, to_text, find_file
+from utils.common import to_int, to_float, to_text, find_file, get_state_from_zip
 from utils.feed import read_excel
-from vendor.models import Product
+from vendor.models import Product, Customer, Order
 
 MYSQL_HOSTNAME = os.getenv('MYSQL_HOSTNAME')
 MYSQL_USERNAME = os.getenv('MYSQL_USERNAME')
@@ -109,7 +109,7 @@ class Processor:
                         tags.append("Free Shipping")
                     tags = ",".join(tags)
 
-                    product = Product.objects.create(
+                    Product.objects.create(
                         sku=to_int(feed['sku']),
                         name=to_text(feed['name']),
                         description=to_text(feed['description']),
@@ -188,29 +188,72 @@ class Processor:
             product.save()
 
     def customers(self):
-        try:
-            with self.connection.cursor() as cursor:
-                sql = """
-                    SELECT
-                        c.customers_id,
-                        c.customers_firstname,
-                        c.customers_lastname,
-                        c.customers_email_address,
-                        a.entry_street_address,
-                        a.entry_city,
-                        a.entry_state,
-                        a.entry_postcode,
-                        a.entry_country_id
-                    FROM
-                        customers c
-                    LEFT JOIN
-                        address_book a ON c.customers_id = a.customers_id;
-                """
-                cursor.execute(sql)
-                customers = cursor.fetchall()
-                return customers
-        except Exception as e:
-            print(f"Error fetching customers: {e}")
+        Customer.objects.all().delete()
+
+        with self.connection.cursor() as cursor:
+            sql = """
+                SELECT
+                    c.customers_firstname AS first_name,
+                    c.customers_lastname AS last_name,
+                    c.customers_email_address AS email,
+                    c.customers_telephone AS phone,
+                    c.customers_gender AS gender,
+                    c.customers_newsletter AS newsletter,
+                    c.customers_newsletter_paper AS sms,
+                    a.entry_street_address AS address1,
+                    a.entry_suburb as address2,
+                    a.entry_company AS company,
+                    a.entry_city AS city,
+                    a.entry_state AS state,
+                    a.entry_postcode AS zip,
+                    co.countries_name AS country
+                FROM
+                    customers c
+                LEFT JOIN
+                    address_book a ON c.customers_id = a.customers_id
+                LEFT JOIN
+                    countries co ON a.entry_country_id = co.countries_id;
+            """
+
+            cursor.execute(sql)
+            customers = cursor.fetchall()
+
+            for customer in customers:
+                state = to_text(customer['state'])
+                zip = to_text(customer['zip'])
+                country = to_text(customer['country'])
+
+                if not state and country == "United States" and zip:
+                    state = get_state_from_zip(zip)
+                    if str(state) == "nan":
+                        state = ""
+
+                try:
+                    Customer.objects.create(
+                        email=to_text(customer['email']),
+                        phone=to_text(customer['phone']),
+
+                        first_name=to_text(customer['first_name']),
+                        last_name=to_text(customer['last_name']),
+                        company=to_text(customer['company']),
+                        address1=to_text(customer['address1']),
+                        address2=to_text(customer['address2']),
+                        city=to_text(customer['city']),
+                        state=state,
+                        zip=zip,
+                        country=country,
+
+                        newsletter=to_int(customer['newsletter']) == 1,
+                        sms=to_int(customer['sms']) == 1,
+
+                        gender="Male" if to_text(
+                            customer['gender']) == "m" else "Female",
+                    )
+
+                    print(to_text(customer['email']))
+
+                except Exception as e:
+                    continue
 
     def orders(self):
         try:

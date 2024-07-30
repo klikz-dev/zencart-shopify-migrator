@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import pgeocode
 
 
 def thread(rows, function):
@@ -73,3 +74,10 @@ def find_file(filename, search_path):
         if path.is_file():
             return str(path)
     return None
+
+
+def get_state_from_zip(zip_code):
+    nomi = pgeocode.Nominatim('us')
+    location = nomi.query_postal_code(zip_code)
+
+    return location['state_name']

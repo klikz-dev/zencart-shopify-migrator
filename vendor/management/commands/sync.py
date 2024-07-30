@@ -23,6 +23,9 @@ class Command(BaseCommand):
         if "collections" in options['functions']:
             processor.collections()
 
+        if "customers" in options['functions']:
+            processor.customers()
+
 
 class Processor:
     def __init__(self):
@@ -118,3 +121,25 @@ class Processor:
 
             print(
                 f"Collection {shopify_collection.id} has been setup successfully")
+
+    def customers(self):
+
+        customers = Customer.objects.filter(customer_id=None)
+        total = len(customers)
+
+        def sync_customer(index, customer):
+
+            shopify_customer = shopify.create_customer(
+                customer=customer, thread=index)
+
+            if shopify_customer.id:
+                customer.customer_id = shopify_customer.id
+                customer.save()
+                print(f"{index}/{total} -- Synced customer {shopify_customer.id}")
+            else:
+                print(f"Error syncing customer {customer.email}")
+
+        for index, customer in enumerate(customers):
+            sync_customer(index, customer)
+
+        # common.thread(rows=customers, function=sync_customer)

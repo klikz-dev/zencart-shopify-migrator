@@ -115,8 +115,7 @@ class Image(models.Model):
 
 class Customer(models.Model):
 
-    email = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
+    email = models.CharField(max_length=200, unique=True)
     phone = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
@@ -144,8 +143,11 @@ class Customer(models.Model):
     tags = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
-    meta_attributes = models.JSONField(
-        default=dict, blank=True, null=True)
+    newsletter = models.BooleanField(default=True)
+    sms = models.BooleanField(default=True)
+
+    gender = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
 
     customer_id = models.CharField(
         max_length=200, default=None, null=True, blank=True)

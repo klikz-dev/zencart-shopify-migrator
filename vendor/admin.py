@@ -86,11 +86,16 @@ class CustomerAdmin(admin.ModelAdmin):
         'state',
         'zip',
         'country',
+        'newsletter',
+        'sms',
         'customer_id'
     ]
 
     list_filter = [
         'country',
+        'newsletter',
+        'sms',
+        'gender',
         'tags'
     ]
 

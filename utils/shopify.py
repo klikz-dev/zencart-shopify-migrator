@@ -92,6 +92,25 @@ class Processor:
 
         return variant_data
 
+    def generate_customer_metafields(self, customer):
+        metafield_keys = [
+            'gender',
+        ]
+
+        metafields = []
+        for metafield_key in metafield_keys:
+            metafield_value = getattr(customer, metafield_key)
+
+            metafield = {
+                "namespace": "custom",
+                "key": metafield_key,
+                "value": metafield_value
+            }
+
+            metafields.append(metafield)
+
+        return metafields
+
 
 def list_products(thread=None):
 
@@ -233,3 +252,116 @@ def create_collection(title, rules, thread=None):
         shopify_collection.save()
 
         return shopify_collection
+
+
+def list_customers(thread=None):
+
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        all_shopify_customer_ids = []
+        shopify_customers = shopify.Customer.find(limit=250)
+
+        while shopify_customers:
+
+            print(f"Fetched {len(shopify_customers)} Customers")
+
+            for shopify_customer in shopify_customers:
+                all_shopify_customer_ids.append(shopify_customer.id)
+
+            shopify_customers = shopify_customers.has_next_page(
+            ) and shopify_customers.next_page() or []
+
+        return all_shopify_customer_ids
+
+
+def create_customer(customer, thread=None):
+    processor = Processor(thread=thread)
+
+    metafields = processor.generate_customer_metafields(customer=customer)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        customer_data = {
+            "email": customer.email,
+            "phone": customer.phone,
+            "first_name": customer.first_name,
+            "last_name": customer.last_name,
+            "addresses": [
+                {
+                    "company": customer.company,
+                    "address1": customer.address1,
+                    "address2": customer.address2,
+                    "city": customer.city,
+                    "province": customer.state,
+                    "country": customer.country,
+                    "zip": customer.zip,
+                    "last_name": customer.last_name,
+                    "first_name": customer.first_name,
+                    "phone": customer.phone,
+                }
+            ],
+            "note": customer.note,
+            "tags": customer.tags,
+        }
+
+        if customer.newsletter:
+            customer_data["email_marketing_consent"] = {
+                "state": "subscribed",
+                "opt_in_level": "confirmed_opt_in",
+            }
+        if customer.sms:
+            customer_data["sms_marketing_consent"] = {
+                "state": "subscribed",
+                "opt_in_level": "single_opt_in",
+            }
+
+        shopify_customer = shopify.Customer(customer_data)
+
+        if shopify_customer.save():
+
+            for metafield in metafields:
+                shopify_metafield = shopify.Metafield()
+                shopify_metafield.namespace = metafield['namespace']
+                shopify_metafield.key = metafield['key']
+                shopify_metafield.value = metafield['value']
+                shopify_customer.add_metafield(shopify_metafield)
+
+        else:
+
+            print(shopify_customer.errors.full_messages())
+
+            del customer_data['phone']
+            for address in customer_data["addresses"]:
+                if 'phone' in address:
+                    del address['phone']
+
+            shopify_customer = shopify.Customer(customer_data)
+
+            if shopify_customer.save():
+
+                for metafield in metafields:
+                    shopify_metafield = shopify.Metafield()
+                    shopify_metafield.namespace = metafield['namespace']
+                    shopify_metafield.key = metafield['key']
+                    shopify_metafield.value = metafield['value']
+                    shopify_customer.add_metafield(shopify_metafield)
+
+            else:
+                print(shopify_customer.errors.full_messages())
+
+        return shopify_customer
+
+
+def delete_customer(id, thread=None):
+
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        shopify_customer = shopify.Customer.find(id)
+
+        success = shopify_customer.destroy()
+
+        return success
