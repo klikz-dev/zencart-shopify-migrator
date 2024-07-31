@@ -48,7 +48,6 @@ class ProductAdmin(admin.ModelAdmin):
         'product_id',
         'name',
         'type',
-        'category',
         'price',
         'quantity',
         'weight',
@@ -60,7 +59,7 @@ class ProductAdmin(admin.ModelAdmin):
         'status',
         'track_quantity',
         'type',
-        'category',
+        'categories',
         'tags',
     ]
 

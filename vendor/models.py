@@ -43,10 +43,10 @@ class Product(models.Model):
     # Category
     type = models.ForeignKey(
         Type, related_name="products", on_delete=models.CASCADE)
-    category = models.ForeignKey(
-        Category, related_name="products", on_delete=models.CASCADE)
+    categories = models.ManyToManyField(
+        Category, related_name="products", blank=True)
     tags = models.ManyToManyField(
-        Tag, related_name="products", null=True, blank=True)
+        Tag, related_name="products", blank=True)
 
     # Pricing
     price = models.FloatField(default=0, blank=True, null=True)

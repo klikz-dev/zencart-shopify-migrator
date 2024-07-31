@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from utils.common import to_int, to_float, to_text, find_file, get_state_from_zip
 from utils.feed import read_excel
-from vendor.models import Product, Customer, Order, LineItem
+from vendor.models import Type, Category, Tag, Product, Customer, Order, LineItem
 
 MYSQL_HOSTNAME = os.getenv('MYSQL_HOSTNAME')
 MYSQL_USERNAME = os.getenv('MYSQL_USERNAME')
@@ -54,6 +54,9 @@ class Processor:
         self.connection.close()
 
     def products(self):
+        Type.objects.all().delete()
+        Category.objects.all().delete()
+        Tag.objects.all().delete()
         Product.objects.all().delete()
 
         # Read Database
@@ -73,8 +76,7 @@ class Processor:
                     p.products_weight AS weight,
                     pd.products_name AS name,
                     pd.products_description AS description,
-                    c.categories_name AS category,
-                    m.manufacturers_name AS vendor,
+                    GROUP_CONCAT(c.categories_name) AS categories,
                     pt.type_name AS type
                 FROM
                     products p
@@ -85,37 +87,46 @@ class Processor:
                 LEFT JOIN
                     categories_description c ON ptc.categories_id = c.categories_id
                 LEFT JOIN
-                    manufacturers m ON p.manufacturers_id = m.manufacturers_id
-                LEFT JOIN
-                    product_types pt ON p.products_type = pt.type_id;
+                    product_types pt ON p.products_type = pt.type_id
+                GROUP BY
+                    p.products_id;
                 """
             cursor.execute(sql)
             feeds = cursor.fetchall()
 
-            for feed in feeds:
+            for feed in tqdm(feeds):
                 try:
-                    type = to_text(feed['type']).replace(
+                    # Type
+                    type_name = to_text(feed['type']).replace(
                         "Product - ", "").strip()
-                    category = to_text(feed['category']).replace(
-                        "<b>", "").replace("</b>", "").strip()
-                    free_shipping = to_int(feed['free_shipping']) == 1
+                    if type_name:
+                        type, _ = Type.objects.get_or_create(name=type_name)
 
+                    # Category
+                    categories = []
+                    for category_name in to_text(feed['categories']).split(","):
+                        category_name = category_name.replace(
+                            "<b>", "").replace("</b>", "").strip()
+                        if category_name:
+                            category, _ = Category.objects.get_or_create(
+                                name=category_name)
+                            categories.append(category)
+
+                    # Tags
                     tags = []
-                    if type:
-                        tags.append(type)
-                    if category:
-                        tags.append(category)
-                    if free_shipping:
-                        tags.append("Free Shipping")
-                    tags = ",".join(tags)
 
-                    Product.objects.create(
+                    free_shipping = to_int(feed['free_shipping']) == 1
+                    if free_shipping:
+                        tag, _ = Tag.objects.get_or_create(
+                            name="Free Shipping")
+                        tags.append(tag)
+
+                    product = Product.objects.create(
                         product_id=to_int(feed['product_id']),
                         name=to_text(feed['name']),
                         description=to_text(feed['description']),
 
-                        vendor="Vins Rare",
-                        tags=tags,
+                        type=type,
 
                         price=to_float(feed['price']),
 
@@ -131,6 +142,12 @@ class Processor:
                         min_order_qty=to_int(feed['min_order_qty']),
                         order_increment=to_int(feed['order_increment']),
                     )
+
+                    for category in categories:
+                        product.categories.add(category)
+
+                    for tag in tags:
+                        product.tags.add(tag)
 
                 except Exception as e:
                     print(f"{feed['product_id']}: {str(e)}")
@@ -160,7 +177,7 @@ class Processor:
             get_other_attributes=False
         )
 
-        for row in rows:
+        for row in tqdm(rows):
             product_id = to_int(row['product_id'])
 
             try:
@@ -169,8 +186,19 @@ class Processor:
                 print(f"{product_id} NOT FOUND")
                 continue
 
+            # Rewrite Type
+            type_name = to_text(row['type'])
+            if type_name:
+                type, _ = Type.objects.get_or_create(name=type_name)
+
+            # Rewrite Name = vintage + name
+            name = to_text(row['name'])
+            vintage = to_text(row['vintage'])
+            if name and vintage:
+                name = f"{vintage} {name}"
+
             product.name = to_text(row['name'])
-            product.type = to_text(row['type'])
+            product.type = type
             product.status = to_text(row['status']) == "On"
             product.roomset = find_file(to_text(row['image_2']), IMAGEDIR)
 
