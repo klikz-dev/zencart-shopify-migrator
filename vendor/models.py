@@ -1,8 +1,7 @@
 from django.db import models
-from django.db.models import Q
 
 
-class Vendor(models.Model):
+class Type(models.Model):
     name = models.CharField(max_length=200, primary_key=True)
 
     def product_count(self):
@@ -12,7 +11,7 @@ class Vendor(models.Model):
         return self.name
 
 
-class Type(models.Model):
+class Category(models.Model):
     name = models.CharField(max_length=200, primary_key=True)
 
     def product_count(self):
@@ -33,20 +32,21 @@ class Tag(models.Model):
 
 
 class Product(models.Model):
+    product_id = models.CharField(max_length=200, primary_key=True)
+
     # Primary
-    sku = models.CharField(max_length=200, primary_key=True)
     name = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     description = models.TextField(
         max_length=5000, default=None, blank=True, null=True)
 
     # Category
-    vendor = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
-    type = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
-    category = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
+    type = models.ForeignKey(
+        Type, related_name="products", on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        Category, related_name="products", on_delete=models.CASCADE)
+    tags = models.ManyToManyField(
+        Tag, related_name="products", null=True, blank=True)
 
     # Pricing
     price = models.FloatField(default=0, blank=True, null=True)
@@ -63,10 +63,6 @@ class Product(models.Model):
     thumbnail = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     roomset = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
-
-    # Tags
-    tags = models.CharField(
         max_length=200, default=None, blank=True, null=True)
 
     # Meta
@@ -94,30 +90,15 @@ class Product(models.Model):
     alc = models.CharField(max_length=200, default=None, blank=True, null=True)
 
     # Shopify
-    product_id = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
-    variant_id = models.CharField(
+    shopify_id = models.CharField(
         max_length=200, default=None, blank=True, null=True)
 
     def __str__(self):
         return self.name
 
 
-class Image(models.Model):
-    path = models.CharField(
-        max_length=2000, default=None, blank=False, null=False)
-    product = models.ForeignKey(
-        Product, related_name="images", on_delete=models.CASCADE, blank=False, null=False)
-
-    def __str__(self):
-        return self.product.sku
-
-
-class Customer(models.Model):
-
-    email = models.CharField(max_length=200, unique=True)
-    phone = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
+class Address(models.Model):
+    address_id = models.IntegerField(primary_key=True)
 
     first_name = models.CharField(
         max_length=200, default=None, null=True, blank=True)
@@ -138,6 +119,25 @@ class Customer(models.Model):
     country = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
+
+class Customer(models.Model):
+    customer_id = models.IntegerField(primary_key=True)
+
+    email = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    phone = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
+    first_name = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    last_name = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    gender = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
+    address = models.ForeignKey(
+        Address, related_name='customers', on_delete=models.CASCADE)
+
     note = models.TextField(
         max_length=2000, default=None, null=True, blank=True)
     tags = models.CharField(
@@ -146,10 +146,7 @@ class Customer(models.Model):
     newsletter = models.BooleanField(default=True)
     sms = models.BooleanField(default=True)
 
-    gender = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-
-    customer_id = models.CharField(
+    shopify_id = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
     def __str__(self):
@@ -157,27 +154,27 @@ class Customer(models.Model):
 
 
 class Order(models.Model):
+    order_id = models.IntegerField(primary_key=True)
 
     customer = models.ForeignKey(
         Customer, related_name='orders', on_delete=models.CASCADE, blank=False, null=False)
 
-    order_total = models.FloatField(default=0, null=False, blank=False)
-    discount = models.FloatField(default=0, null=False, blank=False)
+    total_price = models.FloatField(default=0, null=False, blank=False)
+    shipping_price = models.FloatField(default=0, null=False, blank=False)
+    tax = models.FloatField(default=0, null=False, blank=False)
 
     shipping_method = models.CharField(
         max_length=200, default=None, null=True, blank=True)
-    shipping_cost = models.FloatField(default=0, null=False, blank=False)
-
+    tracking_number = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
     order_date = models.DateField(null=True, blank=True)
     order_note = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
-    tracking_number = models.CharField(
+    status = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
-    meta_attributes = models.JSONField(default=dict, blank=True, null=True)
-
-    order_id = models.CharField(
+    shopify_id = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
     def __str__(self):

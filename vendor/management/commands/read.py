@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from utils.common import to_int, to_float, to_text, find_file, get_state_from_zip
 from utils.feed import read_excel
-from vendor.models import Product, Customer, Order
+from vendor.models import Product, Customer, Order, LineItem
 
 MYSQL_HOSTNAME = os.getenv('MYSQL_HOSTNAME')
 MYSQL_USERNAME = os.getenv('MYSQL_USERNAME')
@@ -60,7 +60,7 @@ class Processor:
         with self.connection.cursor() as cursor:
             sql = """
                 SELECT
-                    p.products_id AS sku,
+                    p.products_id AS product_id,
                     p.products_price AS price,
                     p.products_image AS image,
                     p.master_categories_id,
@@ -110,7 +110,7 @@ class Processor:
                     tags = ",".join(tags)
 
                     Product.objects.create(
-                        sku=to_int(feed['sku']),
+                        product_id=to_int(feed['product_id']),
                         name=to_text(feed['name']),
                         description=to_text(feed['description']),
 
@@ -133,13 +133,13 @@ class Processor:
                     )
 
                 except Exception as e:
-                    print(f"{feed['sku']}: {str(e)}")
+                    print(f"{feed['product_id']}: {str(e)}")
 
         # Read Datasheet
         rows = read_excel(
             file_path=f"{FILEDIR}/product-details.xlsx",
             column_map={
-                'sku': 'Id',
+                'product_id': 'Id',
                 'status': 'Status',
                 'pre_arrival': 'Pre-Arrival',
                 'vintage': 'Vintage',
@@ -161,12 +161,12 @@ class Processor:
         )
 
         for row in rows:
-            sku = to_int(row['sku'])
+            product_id = to_int(row['product_id'])
 
             try:
-                product = Product.objects.get(sku=sku)
+                product = Product.objects.get(product_id=product_id)
             except Product.DoesNotExist:
-                print(f"{sku} NOT FOUND")
+                print(f"{product_id} NOT FOUND")
                 continue
 
             product.name = to_text(row['name'])
@@ -256,29 +256,95 @@ class Processor:
                     continue
 
     def orders(self):
-        try:
-            with self.connection.cursor() as cursor:
-                sql = """
+        Order.objects.all().delete()
+
+        with self.connection.cursor() as cursor:
+            sql = """
                     SELECT
-                        o.orders_id,
-                        o.customers_id,
-                        o.date_purchased,
-                        o.orders_status,
-                        ot.text AS order_total,
-                        op.products_id,
-                        op.products_model,
-                        op.products_name,
-                        op.final_price,
-                        op.products_quantity
+                        o.orders_id AS order_id,
+                        o.customers_email_address AS email,
+                        o.date_purchased AS order_date,
+                        os.orders_status_name AS status
                     FROM
                         orders o
-                    JOIN
-                        orders_products op ON o.orders_id = op.orders_id
-                    JOIN
-                        orders_total ot ON o.orders_id = ot.orders_id AND ot.class = 'ot_total';
+                    LEFT JOIN
+                        orders_status os ON o.orders_status = os.orders_status_id
+                """
+            cursor.execute(sql)
+            orders = cursor.fetchall()
+
+            for order in orders:
+                order_id = order['order_id']
+
+                # Main Order
+                try:
+                    customer = Customer.objects.get(email=order['email'])
+                except Customer.DoesNotExist:
+                    print(f"Customer {order['email']} does NOT exist")
+                    continue
+
+                try:
+                    order_obj = Order.objects.create(
+                        customer=customer,
+                        order_date=order['order_date'],
+                        status=order['status']
+                    )
+                except Exception as e:
+                    print(e)
+                    continue
+
+                # Order Prices
+                sql = f"""
+                    SELECT
+                        ot.value,
+                        ot.class
+                    FROM
+                        orders_total ot
+                    WHERE
+                        ot.orders_id = {order_id}
                 """
                 cursor.execute(sql)
-                orders = cursor.fetchall()
-                return orders
-        except Exception as e:
-            print(f"Error fetching orders: {e}")
+                prices = cursor.fetchall()
+
+                for price in prices:
+                    if price['class'] == "ot_total":
+                        order_obj.total_price = to_float(price['value'])
+                    if price['class'] == "ot_shipping":
+                        order_obj.shipping_price = to_float(price['value'])
+                    if price['class'] == "ot_tax":
+                        order_obj.tax = to_float(price['value'])
+
+                order_obj.save()
+
+                # Order Line Items
+                sql = f"""
+                    SELECT
+                        op.products_id AS sku,
+                        op.final_price as unit_price,
+                        op.products_quantity AS quantity
+                    FROM
+                        orders_products op
+                    WHERE
+                        op.orders_id = {order_id}
+                """
+                cursor.execute(sql)
+                products = cursor.fetchall()
+
+                for product in products:
+
+                    try:
+                        product_obj = Product.objects.get(sku=product['sku'])
+                    except Product.DoesNotExist:
+                        print(f"Product {product['sku']} does NOT exist.")
+                        continue
+
+                    try:
+                        LineItem.objects.create(
+                            order=order_obj,
+                            product=product_obj,
+                            unit_price=product['unit_price'],
+                            quantity=product['quantity'],
+                        )
+                    except Exception as e:
+                        print(e)
+                        continue

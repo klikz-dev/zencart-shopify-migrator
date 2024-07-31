@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from .models import Vendor, Type, Tag, Product, Image, Customer, Order, LineItem
+from .models import Category, Type, Tag, Product, Address, Customer, Order, LineItem
 
 
-@admin.register(Vendor)
-class VendorAdmin(admin.ModelAdmin):
+@admin.register(Type)
+class TypeAdmin(admin.ModelAdmin):
 
     list_display = [
         'name',
@@ -16,8 +16,8 @@ class VendorAdmin(admin.ModelAdmin):
     ]
 
 
-@admin.register(Type)
-class TypeAdmin(admin.ModelAdmin):
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
 
     list_display = [
         'name',
@@ -45,7 +45,7 @@ class TagAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = [
-        'sku',
+        'product_id',
         'name',
         'type',
         'category',
@@ -53,32 +53,30 @@ class ProductAdmin(admin.ModelAdmin):
         'quantity',
         'weight',
         'status',
-        'product_id',
-        'variant_id',
+        'shopify_id',
     ]
 
     list_filter = [
-        'type',
-        'category',
         'status',
         'track_quantity',
+        'type',
+        'category',
+        'tags',
     ]
 
     search_fields = [
-        'sku',
+        'product_id',
         'name',
         'description',
-        'product_id',
-        'variant_id',
+        'shopify_id',
     ]
 
 
-@admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
 
     list_display = [
-        'email',
-        'phone',
+        'address_id',
         'first_name',
         'last_name',
         'address1',
@@ -86,25 +84,53 @@ class CustomerAdmin(admin.ModelAdmin):
         'state',
         'zip',
         'country',
-        'newsletter',
-        'sms',
-        'customer_id'
     ]
 
     list_filter = [
         'country',
-        'newsletter',
-        'sms',
-        'gender',
-        'tags'
     ]
 
     search_fields = [
+        'address_id',
+        'first_name',
+        'last_name',
+        'address1',
+    ]
+
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+
+    autocomplete_fields = [
+        'address',
+    ]
+
+    list_display = [
+        'customer_id',
         'email',
         'phone',
         'first_name',
         'last_name',
+        'address',
+        'newsletter',
+        'sms',
+        'shopify_id',
+    ]
+
+    list_filter = [
+        'newsletter',
+        'sms',
+        'gender',
+        'tags',
+    ]
+
+    search_fields = [
         'customer_id',
+        'email',
+        'phone',
+        'first_name',
+        'last_name',
+        'shopify_id',
     ]
 
 
@@ -132,11 +158,16 @@ class OrderAdmin(admin.ModelAdmin):
 
     list_display = [
         'customer',
-        'shipping_cost',
+        'total_price',
+        'shipping_price',
+        'tax',
         'shipping_method',
-        'order_total',
         'order_date',
         'order_id',
+    ]
+
+    list_filter = [
+        'status'
     ]
 
     search_fields = [
