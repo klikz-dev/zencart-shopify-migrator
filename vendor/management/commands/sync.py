@@ -20,9 +20,6 @@ class Command(BaseCommand):
         if "products" in options['functions']:
             processor.products()
 
-        if "images" in options['functions']:
-            processor.images()
-
         if "collections" in options['functions']:
             processor.collections()
 
@@ -63,18 +60,6 @@ class Processor:
 
         for index, image in enumerate(images):
             sync_image(index, image)
-
-    def images(self):
-
-        products = Product.objects.exclude(shopify_id=None)
-        total = len(products)
-
-        def sync_roomset(index, product):
-            self.image(product)
-            print(
-                f"{index}/{total} -- Product {product.shopify_id} has been update successfully.")
-
-        common.thread(rows=products, function=sync_roomset)
 
     def products(self):
 
@@ -139,7 +124,7 @@ class Processor:
 
     def customers(self):
 
-        customers = Customer.objects.filter(customer_id=None)
+        customers = Customer.objects.filter(shopify_id=None)
         total = len(customers)
 
         def sync_customer(index, customer):
@@ -148,13 +133,14 @@ class Processor:
                 customer=customer, thread=index)
 
             if shopify_customer.id:
-                customer.customer_id = shopify_customer.id
+                customer.shopify_id = shopify_customer.id
                 customer.save()
                 print(f"{index}/{total} -- Synced customer {shopify_customer.id}")
             else:
                 print(f"Error syncing customer {customer.email}")
 
-        # for index, customer in enumerate(customers):
-        #     sync_customer(index, customer)
+        for index, customer in enumerate(customers):
+            sync_customer(index, customer)
+            break
 
-        common.thread(rows=customers, function=sync_customer)
+        # common.thread(rows=customers, function=sync_customer)

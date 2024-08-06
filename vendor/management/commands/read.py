@@ -275,97 +275,75 @@ class Processor:
                     c.customers_gender AS gender,
                     c.customers_newsletter AS newsletter,
                     c.customers_newsletter_paper AS sms,
-                    c.customers_default_address_id AS default_address
+                    c.customers_default_address_id AS default_address,
+                    a.address_book_id AS address_id,
+                    a.entry_firstname AS address_first_name,
+                    a.entry_lastname AS address_last_name,
+                    a.entry_company AS company,
+                    a.entry_street_address AS address1,
+                    a.entry_suburb AS address2,
+                    a.entry_city AS city,
+                    a.entry_state AS state,
+                    a.entry_postcode AS zip,
+                    co.countries_name AS country
                 FROM
-                    customers c;
+                    customers c
+                LEFT JOIN
+                    address_book a ON a.customers_id = c.customers_id
+                LEFT JOIN
+                    countries co ON a.entry_country_id = co.countries_id;
             """
 
             cursor.execute(sql)
             customers = cursor.fetchall()
 
-            for customer in customers:
+            for customer in tqdm(customers):
                 customer_id = to_text(customer['customer_id'])
+                address_id = to_int(customer['address_id'])
+
+                state = to_text(customer['state'])
+                zip = to_text(customer['zip'])
+                country = to_text(customer['country'])
+
+                if not state and country == "United States" and zip:
+                    state = get_state_from_zip(zip.split("-")[0])
+                    if str(state) == "nan":
+                        state = ""
 
                 try:
-                    customer_obj = Customer.objects.create(
-                        customer_id=to_text(customer['customer_id']),
-
-                        email=to_text(customer['email']),
-                        phone=to_text(customer['phone']),
-
-                        first_name=to_text(customer['first_name']),
-                        last_name=to_text(customer['last_name']),
-                        gender="Male" if to_text(
-                            customer['gender']) == "m" else "Female",
-
-                        newsletter=to_int(customer['newsletter']) == 1,
-                        sms=to_int(customer['sms']) == 1,
-
-                        default_address=to_int(customer['default_address'])
+                    customer_obj, _ = Customer.objects.get_or_create(
+                        customer_id=customer_id,
+                        defaults={
+                            'email': to_text(customer['email']),
+                            'phone': to_text(customer['phone']),
+                            'first_name': to_text(customer['first_name']),
+                            'last_name': to_text(customer['last_name']),
+                            'gender': "Male" if to_text(customer['gender']) == "m" else "Female",
+                            'newsletter': to_int(customer['newsletter']) == 1,
+                            'sms': to_int(customer['sms']) == 1,
+                            'default_address': to_int(customer['default_address'])
+                        }
                     )
 
-                    print(f"Customer {customer_id} Created")
+                    Address.objects.create(
+                        address_id=address_id,
+
+                        customer=customer_obj,
+
+                        first_name=to_text(customer['address_first_name']),
+                        last_name=to_text(customer['address_last_name']),
+                        company=to_text(customer['company']),
+                        address1=to_text(customer['address1']),
+                        address2=to_text(customer['address2']),
+                        city=to_text(customer['city']),
+                        state=state,
+                        zip=zip,
+                        country=country,
+                    )
 
                 except Exception as e:
                     print(e)
                     continue
-
-                # Addresses
-                sql = f"""
-                    SELECT
-                        a.address_book_id AS address_id,
-                        a.entry_firstname AS first_name,
-                        a.entry_lastname AS last_name,
-                        a.entry_company AS company,
-                        a.entry_street_address AS address1,
-                        a.entry_suburb AS address2,
-                        a.entry_city AS city,
-                        a.entry_state AS state,
-                        a.entry_postcode AS zip,
-                        c.countries_name AS country
-                    FROM
-                        address_book a
-                    LEFT JOIN
-                        countries c ON a.entry_country_id = c.countries_id
-                    WHERE
-                        a.customers_id = {customer_id};
-                """
-                cursor.execute(sql)
-                addresses = cursor.fetchall()
-
-                for address in addresses:
-                    address_id = to_int(address['address_id'])
-
-                    state = to_text(address['state'])
-                    zip = to_text(address['zip'])
-                    country = to_text(address['country'])
-
-                    if not state and country == "United States" and zip:
-                        state = get_state_from_zip(zip)
-                        if str(state) == "nan":
-                            state = ""
-
-                    try:
-                        Address.objects.create(
-                            address_id=address_id,
-
-                            customer=customer_obj,
-
-                            first_name=to_text(address['first_name']),
-                            last_name=to_text(address['last_name']),
-                            company=to_text(address['company']),
-                            address1=to_text(address['address1']),
-                            address2=to_text(address['address2']),
-                            city=to_text(address['city']),
-                            state=state,
-                            zip=zip,
-                            country=country,
-                        )
-
-                        print(f"Address {address_id} Created")
-                    except Exception as e:
-                        print(e)
-                        continue
 
     def orders(self):
         Order.objects.all().delete()

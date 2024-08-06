@@ -316,25 +316,30 @@ def create_customer(customer, thread=None):
 
     with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
 
+        addresses = []
+        for address in customer.addresses.all():
+            address_obj = {
+                "first_name": address.first_name,
+                "last_name": address.last_name,
+                "company": address.company,
+                "address1": address.address1,
+                "address2": address.address2,
+                "city": address.city,
+                "province": address.state,
+                "zip": address.zip,
+                "country": address.country,
+            }
+            if address.address_id == customer.default_address:
+                address_obj['default'] = True
+
+            addresses.append(address_obj)
+
         customer_data = {
             "email": customer.email,
             "phone": customer.phone,
             "first_name": customer.first_name,
             "last_name": customer.last_name,
-            "addresses": [
-                {
-                    "company": customer.company,
-                    "address1": customer.address1,
-                    "address2": customer.address2,
-                    "city": customer.city,
-                    "province": customer.state,
-                    "country": customer.country,
-                    "zip": customer.zip,
-                    "last_name": customer.last_name,
-                    "first_name": customer.first_name,
-                    "phone": customer.phone,
-                }
-            ],
+            "addresses": addresses,
             "note": customer.note,
             "tags": customer.tags,
         }
