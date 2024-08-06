@@ -33,13 +33,28 @@ class Processor:
         metafield_keys = [
             'min_order_qty',
             'order_increment',
+
             'pre_arrival',
-            'vintage',
+
+            'warehouse_location',
+            'year',
+            'country',
+            'appellation',
+            'rating_ws',
+            'rating_wa',
+            'rating_vm',
+            'rating_bh',
+            'rating_jg',
+            'rating_js',
+            'additional_notes',
+            'size',
+            'wine_searcher',
+            'cellar_tracker_id',
+
             'varietal',
             'region',
             'sub_region',
             'vineyard',
-            'size',
             'disgorged',
             'dosage',
             'alc',
@@ -61,16 +76,34 @@ class Processor:
 
     def generate_product_data(self, product):
 
+        # Tags
+        tags = []
+
+        categories = product.categories.all()
+        for category in categories:
+            tags.append(f"{category.name}")
+
+        for tag in product.tags.all():
+            tags.append(f"{tag.name}")
+
+        tags = ",".join(tags)
+
+        # Type
+        type = ""
+        if product.type:
+            type = product.type.name
+
         product_data = {
             "title": product.name.title(),
             "body_html": product.description,
-            "vendor": product.vendor,
-            "product_type": product.type,
-            "tags": product.tags,
+            "vendor": "Vins Rare",
+            "product_type": type,
+            "tags": tags,
         }
 
         if not product.status:
             product_data['published_at'] = None
+            product_data['published_scope'] = 'web'
 
         return product_data
 
@@ -78,7 +111,7 @@ class Processor:
 
         variant_data = {
             'price': product.price,
-            'sku': f"VR-{product.sku}",
+            'sku': f"VR-{product.product_id}",
             'weight': product.weight,
             'weight_unit': 'lb',
             'inventory_management': "shopify" if product.track_quantity else None,
@@ -187,7 +220,7 @@ def delete_product(id, thread=None):
         return success
 
 
-def upload_image(product_id, image, alt, thread=None):
+def upload_image(shopify_id, image, alt, thread=None):
 
     processor = Processor(thread=thread)
 
@@ -198,7 +231,7 @@ def upload_image(product_id, image, alt, thread=None):
                 image_file.read()).decode('utf-8')
 
             image_obj = {
-                'product_id': product_id,
+                'product_id': shopify_id,
                 'attachment': encoded_string,
                 'filename': os.path.basename(image),
                 'alt': alt,
@@ -217,7 +250,7 @@ def update_inventory(product, thread=None):
 
     with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
 
-        shopify_product = shopify.Product.find(product.product_id)
+        shopify_product = shopify.Product.find(product.shopify_id)
         for shopify_variant in shopify_product.variants:
             inventory_item_id = shopify_variant.inventory_item_id
 
@@ -230,11 +263,11 @@ def update_inventory(product, thread=None):
                                     inventory_item_id=inventory_item_id, available=product.quantity)
 
                 print(
-                    f"Product {product.product_id} Inventory updated to {product.quantity}")
+                    f"Product {product.shopify_id} Inventory updated to {product.quantity}")
 
             else:
                 print(
-                    f"Failed updating inventory for product {product.product_id}")
+                    f"Failed updating inventory for product {product.shopify_id}")
 
         return
 

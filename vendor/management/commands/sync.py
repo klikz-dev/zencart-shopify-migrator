@@ -20,6 +20,9 @@ class Command(BaseCommand):
         if "products" in options['functions']:
             processor.products()
 
+        if "images" in options['functions']:
+            processor.images()
+
         if "collections" in options['functions']:
             processor.collections()
 
@@ -46,13 +49,13 @@ class Processor:
         def sync_image(index, image):
             try:
                 shopify_image = shopify.upload_image(
-                    product_id=product.product_id,
+                    shopify_id=product.shopify_id,
                     image=image,
                     alt=product.name,
                     thread=index
                 )
                 print(
-                    f"Uploaded Image {shopify_image.id} for Product {product.product_id}")
+                    f"Uploaded Image {shopify_image.id} for Product {product.shopify_id}")
 
             except Exception as e:
                 print(e)
@@ -61,9 +64,21 @@ class Processor:
         for index, image in enumerate(images):
             sync_image(index, image)
 
+    def images(self):
+
+        products = Product.objects.exclude(shopify_id=None)
+        total = len(products)
+
+        def sync_roomset(index, product):
+            self.image(product)
+            print(
+                f"{index}/{total} -- Product {product.shopify_id} has been update successfully.")
+
+        common.thread(rows=products, function=sync_roomset)
+
     def products(self):
 
-        products = Product.objects.filter(product_id=None)
+        products = Product.objects.filter(shopify_id=None)
         total = len(products)
 
         def sync_product(index, product):
@@ -72,7 +87,7 @@ class Processor:
                     product=product, thread=index)
 
                 if shopify_product.id:
-                    product.product_id = shopify_product.id
+                    product.shopify_id = shopify_product.id
                     product.save()
 
                     self.image(product)
@@ -83,7 +98,7 @@ class Processor:
                     shopify.update_inventory(product=product, thread=index)
                 else:
                     print(
-                        f"Failed uploading - Product {product.sku}")
+                        f"Failed uploading - Product {product.product_id}")
 
             except Exception as e:
                 print(e)

@@ -57,6 +57,8 @@ class ProductAdmin(admin.ModelAdmin):
 
     list_filter = [
         'status',
+        'pre_arrival',
+        'size',
         'track_quantity',
         'type',
         'categories',

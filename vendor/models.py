@@ -69,10 +69,36 @@ class Product(models.Model):
     min_order_qty = models.IntegerField(default=0, null=True, blank=True)
     order_increment = models.IntegerField(default=0, null=True, blank=True)
 
-    pre_arrival = models.CharField(
+    pre_arrival = models.BooleanField(default=False)
+
+    warehouse_location = models.CharField(
         max_length=200, default=None, blank=True, null=True)
-    vintage = models.CharField(
+    year = models.CharField(
         max_length=200, default=None, blank=True, null=True)
+    country = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    appellation = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_ws = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_wa = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_vm = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_bh = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_jg = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_js = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    additional_notes = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    size = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    wine_searcher = models.BooleanField(default=False)
+    cellar_tracker_id = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+
     varietal = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     region = models.CharField(
@@ -80,8 +106,6 @@ class Product(models.Model):
     sub_region = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     vineyard = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
-    size = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     disgorged = models.CharField(
         max_length=200, default=None, blank=True, null=True)

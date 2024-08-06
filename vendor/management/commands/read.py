@@ -74,10 +74,25 @@ class Processor:
                     p.products_status AS status,
                     p.products_quantity AS quantity,
                     p.products_weight AS weight,
+                    p.products_pre_arrival AS pre_arrival,
                     pd.products_name AS name,
                     pd.products_description AS description,
                     GROUP_CONCAT(c.categories_name) AS categories,
-                    pt.type_name AS type
+                    pt.type_name AS type,
+                    pv.product_vino_location AS warehouse_location,
+                    pv.product_vino_year AS year,
+                    pv.product_vino_country AS country,
+                    pv.product_vino_region AS appellation,
+                    pv.product_vino_rating_ws AS ws,
+                    pv.product_vino_rating_wa AS wa,
+                    pv.product_vino_rating_iwc AS vm,
+                    pv.product_vino_rating_cg AS bh,
+                    pv.product_vino_rating_view AS jg,
+                    pv.product_vino_rating_js AS js,
+                    pv.product_vino_rating_other AS additional_notes,
+                    pv.product_vino_size AS size,
+                    pv.product_vino_wine_searcher AS wine_searcher,
+                    pv.product_vino_ct_id AS cellar_tracker_id
                 FROM
                     products p
                 LEFT JOIN
@@ -88,6 +103,8 @@ class Processor:
                     categories_description c ON ptc.categories_id = c.categories_id
                 LEFT JOIN
                     product_types pt ON p.products_type = pt.type_id
+                LEFT JOIN
+                    product_vino_extra pv ON p.products_id = pv.product_vino_id
                 GROUP BY
                     p.products_id;
                 """
@@ -121,9 +138,32 @@ class Processor:
                             name="Free Shipping")
                         tags.append(tag)
 
+                    # Name Rebuild
+                    name = to_text(feed['name'])
+                    year = to_text(feed['year'])
+                    if year:
+                        name = f"{year} {name}"
+
+                    if not name:
+                        continue
+
+                    # Size Rebuild
+                    size = to_text(feed['size'])
+                    SIZE_MAP = {
+                        "p": "375ml",
+                        "s": "750ml",
+                        "l": "Magnum (1.5l)",
+                        "dm": "Double Magnum (3.0l)",
+                        "jer": "Jeroboam (4.5l)",
+                        "imp": "Imperial (6.0l)",
+                        "sal": "Salmanazar (9.0l)",
+                        "bal": "Balthazar (12l)"
+                    }
+                    size = SIZE_MAP.get(size, size)
+
                     product = Product.objects.create(
                         product_id=to_int(feed['product_id']),
-                        name=to_text(feed['name']),
+                        name=name,
                         description=to_text(feed['description']),
 
                         type=type,
@@ -141,6 +181,23 @@ class Processor:
 
                         min_order_qty=to_int(feed['min_order_qty']),
                         order_increment=to_int(feed['order_increment']),
+
+                        pre_arrival=to_text(feed['pre_arrival']) == "Y",
+
+                        warehouse_location=to_text(feed['warehouse_location']),
+                        year=year,
+                        country=to_text(feed['country']),
+                        appellation=to_text(feed['appellation']),
+                        rating_ws=to_text(feed['ws']),
+                        rating_wa=to_text(feed['wa']),
+                        rating_vm=to_text(feed['vm']),
+                        rating_bh=to_text(feed['bh']),
+                        rating_jg=to_text(feed['jg']),
+                        rating_js=to_text(feed['js']),
+                        additional_notes=to_text(feed['additional_notes']),
+                        size=size,
+                        wine_searcher=to_text(feed['wine_searcher']) == "Y",
+                        cellar_tracker_id=to_text(feed['cellar_tracker_id']),
                     )
 
                     for category in categories:
@@ -157,10 +214,7 @@ class Processor:
             file_path=f"{FILEDIR}/product-details.xlsx",
             column_map={
                 'product_id': 'Id',
-                'status': 'Status',
-                'pre_arrival': 'Pre-Arrival',
-                'vintage': 'Vintage',
-                'name': 'Name',
+
                 'type': 'New "Type"',
                 'varietal': 'New: "Varietal"',
                 'region': 'New: "Region"',
@@ -170,6 +224,7 @@ class Processor:
                 'disgorged': 'New "Disgorged"',
                 'dosage': 'New "Dosage"',
                 'alc': 'New: "Alc %"',
+
                 'image_2': 'Image #2 Location',
             },
             exclude=[],
@@ -192,26 +247,16 @@ class Processor:
                 type, _ = Type.objects.get_or_create(name=type_name)
 
             # Rewrite Name = vintage + name
-            name = to_text(row['name'])
-            vintage = to_text(row['vintage'])
-            if name and vintage:
-                name = f"{vintage} {name}"
-
-            product.name = to_text(row['name'])
             product.type = type
-            product.status = to_text(row['status']) == "On"
-            product.roomset = find_file(to_text(row['image_2']), IMAGEDIR)
-
-            product.pre_arrival = to_text(row['pre_arrival'])
-            product.vintage = to_text(row['vintage'])
             product.varietal = to_text(row['varietal'])
             product.region = to_text(row['region'])
             product.sub_region = to_text(row['sub_region'])
             product.vineyard = to_text(row['vineyard'])
-            product.size = to_text(row['size'])
             product.disgorged = to_text(row['disgorged'])
             product.dosage = to_text(row['dosage'])
             product.alc = to_text(row['alc'])
+
+            product.roomset = find_file(to_text(row['image_2']), IMAGEDIR)
 
             product.save()
 
