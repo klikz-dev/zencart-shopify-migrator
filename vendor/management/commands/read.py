@@ -347,40 +347,60 @@ class Processor:
 
     def orders(self):
         Order.objects.all().delete()
+        LineItem.objects.all().delete()
 
         with self.connection.cursor() as cursor:
             sql = """
                     SELECT
                         o.orders_id AS order_id,
-                        o.customers_email_address AS email,
+                        o.customers_id AS customer_id,
                         o.date_purchased AS order_date,
-                        os.orders_status_name AS status
+                        o.shipping_method AS shipping_method,
+
+                        o.billing_name AS billing_name,
+                        o.billing_company AS billing_company,
+                        o.billing_street_address AS billing_address1,
+                        o.billing_suburb AS billing_address2,
+                        o.billing_city AS billing_city,
+                        o.billing_state AS billing_state,
+                        o.billing_postcode AS billing_zip,
+                        o.billing_country AS billing_country,
+
+                        o.delivery_address_id AS shipping_address_id,
+
+                        os.orders_status_name AS status,
+
+                        op.products_id AS product_id,
+                        op.final_price as unit_price,
+                        op.products_quantity AS quantity
                     FROM
                         orders o
                     LEFT JOIN
                         orders_status os ON o.orders_status = os.orders_status_id
+                    LEFT JOIN
+                        orders_products op ON op.orders_id = o.orders_id;
                 """
             cursor.execute(sql)
             orders = cursor.fetchall()
 
-            for order in orders:
+            for order in tqdm(orders):
                 order_id = order['order_id']
 
-                # Main Order
+                # Customer
                 try:
-                    customer = Customer.objects.get(email=order['email'])
+                    customer = Customer.objects.get(
+                        customer_id=order['customer_id'])
                 except Customer.DoesNotExist:
-                    print(f"Customer {order['email']} does NOT exist")
+                    print(f"Customer {order['customer_id']} does NOT exist")
                     continue
 
+                # Product
                 try:
-                    order_obj = Order.objects.create(
-                        customer=customer,
-                        order_date=order['order_date'],
-                        status=order['status']
-                    )
-                except Exception as e:
-                    print(e)
+                    product = Product.objects.get(
+                        product_id=order['product_id'])
+                except Product.DoesNotExist:
+                    print(
+                        f"Product {order['product_id']} does NOT exist.")
                     continue
 
                 # Order Prices
@@ -396,45 +416,50 @@ class Processor:
                 cursor.execute(sql)
                 prices = cursor.fetchall()
 
+                total_price = 0
+                shipping_price = 0
+                tax = 0
                 for price in prices:
                     if price['class'] == "ot_total":
-                        order_obj.total_price = to_float(price['value'])
+                        total_price = to_float(price['value'])
                     if price['class'] == "ot_shipping":
-                        order_obj.shipping_price = to_float(price['value'])
+                        shipping_price = to_float(price['value'])
                     if price['class'] == "ot_tax":
-                        order_obj.tax = to_float(price['value'])
+                        tax = to_float(price['value'])
 
-                order_obj.save()
+                # Create Order obj
+                try:
+                    order_obj, _ = Order.objects.get_or_create(
+                        order_id=order_id,
+                        customer=customer,
+                        order_date=order['order_date'],
+                        shipping_method=order['shipping_method'],
 
-                # Order Line Items
-                sql = f"""
-                    SELECT
-                        op.products_id AS sku,
-                        op.final_price as unit_price,
-                        op.products_quantity AS quantity
-                    FROM
-                        orders_products op
-                    WHERE
-                        op.orders_id = {order_id}
-                """
-                cursor.execute(sql)
-                products = cursor.fetchall()
+                        billing_name=to_text(order['billing_name']),
+                        billing_company=to_text(order['billing_company']),
+                        billing_address1=to_text(order['billing_address1']),
+                        billing_address2=to_text(order['billing_address2']),
+                        billing_city=to_text(order['billing_city']),
+                        billing_state=to_text(order['billing_state']),
+                        billing_zip=to_text(order['billing_zip']),
+                        billing_country=to_text(order['billing_country']),
 
-                for product in products:
+                        shipping_address_id=to_int(
+                            order['shipping_address_id']),
 
-                    try:
-                        product_obj = Product.objects.get(sku=product['sku'])
-                    except Product.DoesNotExist:
-                        print(f"Product {product['sku']} does NOT exist.")
-                        continue
+                        status=to_text(order['status']),
 
-                    try:
-                        LineItem.objects.create(
-                            order=order_obj,
-                            product=product_obj,
-                            unit_price=product['unit_price'],
-                            quantity=product['quantity'],
-                        )
-                    except Exception as e:
-                        print(e)
-                        continue
+                        total_price=total_price,
+                        shipping_price=shipping_price,
+                        tax=tax,
+                    )
+
+                    LineItem.objects.create(
+                        order=order_obj,
+                        product=product,
+                        unit_price=order['unit_price'],
+                        quantity=order['quantity'],
+                    )
+                except Exception as e:
+                    print(e)
+                    continue

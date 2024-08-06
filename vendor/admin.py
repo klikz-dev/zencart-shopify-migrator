@@ -152,7 +152,6 @@ class OrderAdmin(admin.ModelAdmin):
             'product',
             'unit_price',
             'quantity',
-            'item_note',
         ]
 
     autocomplete_fields = [
@@ -167,6 +166,7 @@ class OrderAdmin(admin.ModelAdmin):
         'shipping_method',
         'order_date',
         'order_id',
+        'shipping_address_id'
     ]
 
     list_filter = [

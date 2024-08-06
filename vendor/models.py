@@ -197,8 +197,28 @@ class Order(models.Model):
     order_note = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
+    billing_name = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    billing_company = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    billing_address1 = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    billing_address2 = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    billing_city = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    billing_state = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    billing_zip = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    billing_country = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
     status = models.CharField(
         max_length=200, default=None, null=True, blank=True)
+
+    shipping_address_id = models.IntegerField(
+        default=None, null=True, blank=True)
 
     shopify_id = models.CharField(
         max_length=200, default=None, null=True, blank=True)

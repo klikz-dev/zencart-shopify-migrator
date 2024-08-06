@@ -24,6 +24,9 @@ class Command(BaseCommand):
         if "customers" in options['functions']:
             processor.customers()
 
+        if "orders" in options['functions']:
+            processor.orders()
+
 
 class Processor:
     def __init__(self):
@@ -52,3 +55,12 @@ class Processor:
         shopify_customer_ids = shopify.list_customers()
 
         common.thread(rows=shopify_customer_ids, function=delete_customer)
+
+    def orders(self):
+        def delete_order(index, order_id):
+            print(f"Deleting {order_id}")
+            shopify.delete_order(order_id, thread=index)
+
+        shopify_order_ids = shopify.list_orders()
+
+        common.thread(rows=shopify_order_ids, function=delete_order)

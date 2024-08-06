@@ -406,3 +406,99 @@ def delete_customer(id, thread=None):
         success = shopify_customer.destroy()
 
         return success
+
+
+def list_orders(thread=None):
+
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        all_shopify_order_ids = []
+        shopify_orders = shopify.Order.find(limit=250, status="any")
+
+        while shopify_orders:
+
+            print(f"Fetched {len(shopify_orders)} Orders.")
+
+            for shopify_order in shopify_orders:
+                all_shopify_order_ids.append(shopify_order.id)
+
+            shopify_orders = shopify_orders.has_next_page(
+            ) and shopify_orders.next_page() or []
+
+        return all_shopify_order_ids
+
+
+def create_order(order, thread=None):
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        shopify_order = shopify.Order()
+
+        shopify_order.po_number = order.order_no
+
+        shopify_order.customer = {
+            "id": order.customer.shopify_id
+        }
+
+        line_items = []
+        for item in order.lineItems.all():
+            try:
+                shopify_product = shopify.Product.find(item.product.product_id)
+                variant_id = shopify_product.variants[0].id
+            except:
+                continue
+
+            if item.quantity < 1:
+                continue
+
+            line_item = shopify.LineItem({
+                "variant_id": variant_id,
+                "title": item.product.title,
+                "quantity": item.quantity,
+                "price": item.unit_price
+            })
+            line_items.append(line_item)
+
+        shopify_order.line_items = line_items
+
+        shopify_order.shipping_lines = [{
+            "title": order.shipping_method,
+            "code": order.shipping_method,
+            "price": order.shipping_cost
+        }]
+
+        shopify_order.total_price = order.order_total
+        shopify_order.total_discounts = order.order_total * order.discount / 100
+
+        if order.order_date:
+            shopify_order.created_at = order.order_date.isoformat()
+
+        shopify_order.fulfillment_status = "fulfilled"
+
+        if order.amount_paid == 0:
+            shopify_order.financial_status = "pending"
+        elif order.amount_paid < shopify_order.total_price:
+            shopify_order.financial_status = "partially_paid"
+        else:
+            shopify_order.financial_status = "paid"
+
+        if not shopify_order.save():
+            print(shopify_order.errors.full_messages())
+
+        return shopify_order
+
+
+def delete_order(id, thread=None):
+
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        shopify_order = shopify.Order.find(id)
+
+        success = shopify_order.destroy()
+
+        return success
