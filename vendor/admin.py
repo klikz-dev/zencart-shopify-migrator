@@ -76,6 +76,10 @@ class ProductAdmin(admin.ModelAdmin):
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
 
+    autocomplete_fields = [
+        'customer',
+    ]
+
     list_display = [
         'address_id',
         'first_name',
@@ -102,19 +106,15 @@ class AddressAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
 
-    autocomplete_fields = [
-        'address',
-    ]
-
     list_display = [
         'customer_id',
         'email',
         'phone',
         'first_name',
         'last_name',
-        'address',
         'newsletter',
         'sms',
+        'default_address',
         'shopify_id',
     ]
 

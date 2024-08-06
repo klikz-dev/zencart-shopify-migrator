@@ -121,6 +121,38 @@ class Product(models.Model):
         return self.name
 
 
+class Customer(models.Model):
+    customer_id = models.IntegerField(primary_key=True)
+
+    email = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    phone = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
+    first_name = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    last_name = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+    gender = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
+    note = models.TextField(
+        max_length=2000, default=None, null=True, blank=True)
+    tags = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
+    newsletter = models.BooleanField(default=True)
+    sms = models.BooleanField(default=True)
+
+    default_address = models.IntegerField(default=None, null=True, blank=True)
+
+    shopify_id = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+
 class Address(models.Model):
     address_id = models.IntegerField(primary_key=True)
 
@@ -143,38 +175,8 @@ class Address(models.Model):
     country = models.CharField(
         max_length=200, default=None, null=True, blank=True)
 
-
-class Customer(models.Model):
-    customer_id = models.IntegerField(primary_key=True)
-
-    email = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-    phone = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-
-    first_name = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-    last_name = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-    gender = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-
-    address = models.ForeignKey(
-        Address, related_name='customers', on_delete=models.CASCADE)
-
-    note = models.TextField(
-        max_length=2000, default=None, null=True, blank=True)
-    tags = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-
-    newsletter = models.BooleanField(default=True)
-    sms = models.BooleanField(default=True)
-
-    shopify_id = models.CharField(
-        max_length=200, default=None, null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+    customer = models.ForeignKey(
+        Customer, related_name='addresses', on_delete=models.CASCADE)
 
 
 class Order(models.Model):
