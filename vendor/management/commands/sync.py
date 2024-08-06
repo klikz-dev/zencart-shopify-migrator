@@ -139,8 +139,7 @@ class Processor:
             else:
                 print(f"Error syncing customer {customer.email}")
 
-        for index, customer in enumerate(customers):
-            sync_customer(index, customer)
-            break
+        # for index, customer in enumerate(customers):
+        #     sync_customer(index, customer)
 
-        # common.thread(rows=customers, function=sync_customer)
+        common.thread(rows=customers, function=sync_customer)

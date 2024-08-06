@@ -371,9 +371,6 @@ def create_customer(customer, thread=None):
             print(shopify_customer.errors.full_messages())
 
             del customer_data['phone']
-            for address in customer_data["addresses"]:
-                if 'phone' in address:
-                    del address['phone']
 
             shopify_customer = shopify.Customer(customer_data)
 
