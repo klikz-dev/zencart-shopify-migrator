@@ -150,7 +150,7 @@ class Customer(models.Model):
         max_length=200, default=None, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return str(self.customer_id)
 
 
 class Address(models.Model):

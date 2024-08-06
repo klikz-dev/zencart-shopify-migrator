@@ -82,6 +82,7 @@ class AddressAdmin(admin.ModelAdmin):
 
     list_display = [
         'address_id',
+        'customer',
         'first_name',
         'last_name',
         'address1',
@@ -97,6 +98,7 @@ class AddressAdmin(admin.ModelAdmin):
 
     search_fields = [
         'address_id',
+        'customer__customer_id',
         'first_name',
         'last_name',
         'address1',

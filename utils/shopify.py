@@ -316,6 +316,9 @@ def create_customer(customer, thread=None):
 
     with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
 
+        # Exceptions
+        email = customer.email.replace(" ", "")
+
         addresses = []
         for address in customer.addresses.all():
             address_obj = {
@@ -335,7 +338,7 @@ def create_customer(customer, thread=None):
             addresses.append(address_obj)
 
         customer_data = {
-            "email": customer.email,
+            "email": email,
             "phone": customer.phone,
             "first_name": customer.first_name,
             "last_name": customer.last_name,
@@ -349,7 +352,7 @@ def create_customer(customer, thread=None):
                 "state": "subscribed",
                 "opt_in_level": "confirmed_opt_in",
             }
-        if customer.sms:
+        if customer.sms and customer.phone:
             customer_data["sms_marketing_consent"] = {
                 "state": "subscribed",
                 "opt_in_level": "single_opt_in",
@@ -368,9 +371,12 @@ def create_customer(customer, thread=None):
 
         else:
 
-            print(shopify_customer.errors.full_messages())
+            print(f"{customer}: {shopify_customer.errors.full_messages()}")
 
-            del customer_data['phone']
+            if 'phone' in customer_data:
+                del customer_data['phone']
+            if 'sms_marketing_consent' in customer_data:
+                del customer_data['sms_marketing_consent']
 
             shopify_customer = shopify.Customer(customer_data)
 
@@ -384,7 +390,7 @@ def create_customer(customer, thread=None):
                     shopify_customer.add_metafield(shopify_metafield)
 
             else:
-                print(shopify_customer.errors.full_messages())
+                print(f"{customer}: {shopify_customer.errors.full_messages()}")
 
         return shopify_customer
 
