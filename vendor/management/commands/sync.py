@@ -26,6 +26,9 @@ class Command(BaseCommand):
         if "customers" in options['functions']:
             processor.customers()
 
+        if "orders" in options['functions']:
+            processor.orders()
+
 
 class Processor:
     def __init__(self):
@@ -143,3 +146,26 @@ class Processor:
         #     sync_customer(index, customer)
 
         common.thread(rows=customers, function=sync_customer)
+
+    def orders(self):
+
+        orders = Order.objects.filter(shopify_id=None)
+        total = len(orders)
+
+        def sync_order(index, order):
+
+            shopify_order = shopify.create_order(
+                order=order, thread=index)
+
+            if shopify_order.id:
+                order.shopify_id = shopify_order.id
+                order.save()
+                print(f"{index}/{total} -- Synced order {shopify_order.id}")
+            else:
+                print(f"Error syncing order {order.order_id}")
+
+        for index, order in enumerate(orders):
+            sync_order(index, order)
+            break
+
+        # common.thread(rows=orders, function=sync_order)

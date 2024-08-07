@@ -159,13 +159,14 @@ class OrderAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
+        'order_id',
         'customer',
         'total_price',
         'shipping_price',
         'tax',
         'shipping_method',
         'order_date',
-        'order_id',
+        'shopify_id',
         'shipping_address_id'
     ]
 
@@ -174,8 +175,10 @@ class OrderAdmin(admin.ModelAdmin):
     ]
 
     search_fields = [
-        'shipping_method',
         'order_id',
+        'shipping_method',
+        'shipping_address_id',
+        'shopify_id',
     ]
 
     inlines = [LineItemInline]

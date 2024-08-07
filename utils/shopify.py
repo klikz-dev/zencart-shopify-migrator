@@ -1,11 +1,8 @@
 import os
 import base64
-import json
-import requests
 from pathlib import Path
-from datetime import datetime
 import shopify
-from utils import common
+from vendor.models import Address
 
 SHOPIFY_API_BASE_URL = os.getenv('SHOPIFY_API_BASE_URL')
 SHOPIFY_API_VERSION = os.getenv('SHOPIFY_API_VERSION')
@@ -437,54 +434,88 @@ def create_order(order, thread=None):
 
         shopify_order = shopify.Order()
 
-        shopify_order.po_number = order.order_no
-
+        # Customer
         shopify_order.customer = {
             "id": order.customer.shopify_id
         }
 
+        # Line Items
         line_items = []
         for item in order.lineItems.all():
-            try:
-                shopify_product = shopify.Product.find(item.product.product_id)
-                variant_id = shopify_product.variants[0].id
-            except:
-                continue
-
             if item.quantity < 1:
                 continue
 
             line_item = shopify.LineItem({
-                "variant_id": variant_id,
-                "title": item.product.title,
+                "product_id": item.product.shopify_id,
+                "price": item.unit_price,
                 "quantity": item.quantity,
-                "price": item.unit_price
             })
             line_items.append(line_item)
-
         shopify_order.line_items = line_items
 
+        # Costs
         shopify_order.shipping_lines = [{
             "title": order.shipping_method,
-            "code": order.shipping_method,
-            "price": order.shipping_cost
+            "price": order.shipping_price
         }]
-
-        shopify_order.total_price = order.order_total
-        shopify_order.total_discounts = order.order_total * order.discount / 100
-
+        shopify_order.total_tax = order.tax
+        shopify_order.total_price = order.total_price
         if order.order_date:
             shopify_order.created_at = order.order_date.isoformat()
 
-        shopify_order.fulfillment_status = "fulfilled"
+        # Shipping Address
+        if order.shipping_address_id > 0:
+            try:
+                shipping_address = Address.objects.get(
+                    order.shipping_address_id)
+                shopify_order.shipping_address = {
+                    'first_name': shipping_address.first_name,
+                    'last_name': shipping_address.last_name,
+                    'company': shipping_address.company,
+                    'address1': shipping_address.address1,
+                    'address2': shipping_address.address2,
+                    'city': shipping_address.city,
+                    'province': shipping_address.state,
+                    'zip': shipping_address.zip,
+                    'country': shipping_address.country,
+                }
+            except Exception as e:
+                print(e)
+                pass
 
-        if order.amount_paid == 0:
-            shopify_order.financial_status = "pending"
-        elif order.amount_paid < shopify_order.total_price:
-            shopify_order.financial_status = "partially_paid"
-        else:
+        # Billing Address
+        shopify_order.billing_address = {
+            'name': order.billing_name,
+            'company': order.billing_company,
+            'address1': order.billing_address1,
+            'address2': order.billing_address2,
+            'city': order.billing_city,
+            'province': order.billing_state,
+            'zip': order.billing_zip,
+            'country': order.billing_country,
+        }
+
+        # Order Status
+        if order.status == "Cancelled":
+            shopify_order.fulfillment_status = "restocked"
+            shopify_order.financial_status = "refunded"
+        elif order.status == "Delivered":
+            shopify_order.fulfillment_status = "fulfilled"
             shopify_order.financial_status = "paid"
+        elif order.status == "Partial Shipment":
+            shopify_order.fulfillment_status = "partial"
+            shopify_order.financial_status = "paid"
+        elif order.status == "Pending":
+            shopify_order.fulfillment_status = "null"
+            shopify_order.financial_status = "pending"
+        elif order.status == "Processing":
+            shopify_order.fulfillment_status = "null"
+            shopify_order.financial_status = "paid"
+        else:
+            shopify_order.fulfillment_status = "null"
+            shopify_order.financial_status = "pending"
 
+        # Save
         if not shopify_order.save():
             print(shopify_order.errors.full_messages())
 
