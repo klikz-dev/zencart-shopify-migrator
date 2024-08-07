@@ -275,7 +275,7 @@ class Processor:
                     c.customers_gender AS gender,
                     c.customers_newsletter AS newsletter,
                     c.customers_newsletter_paper AS sms,
-                    c.customers_default_address_id AS default_address,
+                    c.customers_default_shipping_id AS default_address,
                     a.address_book_id AS address_id,
                     a.entry_firstname AS address_first_name,
                     a.entry_lastname AS address_last_name,
