@@ -442,11 +442,15 @@ def create_order(order, thread=None):
         # Line Items
         line_items = []
         for item in order.lineItems.all():
-            if item.quantity < 1:
+            try:
+                shopify_product = shopify.Product.find(item.product.shopify_id)
+                variant_id = shopify_product.variants[0].id
+            except Exception as e:
+                print(e)
                 continue
 
             line_item = shopify.LineItem({
-                "product_id": item.product.shopify_id,
+                "variant_id": variant_id,
                 "price": item.unit_price,
                 "quantity": item.quantity,
             })
@@ -458,30 +462,32 @@ def create_order(order, thread=None):
             "title": order.shipping_method,
             "price": order.shipping_price
         }]
-        shopify_order.total_tax = order.tax
+        shopify_order.tax_lines = [{
+            'price': order.tax
+        }]
         shopify_order.total_price = order.total_price
         if order.order_date:
             shopify_order.created_at = order.order_date.isoformat()
 
         # Shipping Address
-        if order.shipping_address_id > 0:
-            try:
-                shipping_address = Address.objects.get(
-                    order.shipping_address_id)
-                shopify_order.shipping_address = {
-                    'first_name': shipping_address.first_name,
-                    'last_name': shipping_address.last_name,
-                    'company': shipping_address.company,
-                    'address1': shipping_address.address1,
-                    'address2': shipping_address.address2,
-                    'city': shipping_address.city,
-                    'province': shipping_address.state,
-                    'zip': shipping_address.zip,
-                    'country': shipping_address.country,
-                }
-            except Exception as e:
-                print(e)
-                pass
+        try:
+            shipping_address = Address.objects.get(
+                address_id=order.shipping_address_id or order.customer.default_address)
+
+            shopify_order.shipping_address = {
+                'first_name': shipping_address.first_name,
+                'last_name': shipping_address.last_name,
+                'company': shipping_address.company,
+                'address1': shipping_address.address1,
+                'address2': shipping_address.address2,
+                'city': shipping_address.city,
+                'province': shipping_address.state,
+                'zip': shipping_address.zip,
+                'country': shipping_address.country,
+            }
+        except Exception as e:
+            print(e)
+            pass
 
         # Billing Address
         shopify_order.billing_address = {

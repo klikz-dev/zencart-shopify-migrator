@@ -164,8 +164,7 @@ class Processor:
             else:
                 print(f"Error syncing order {order.order_id}")
 
-        for index, order in enumerate(orders):
-            sync_order(index, order)
-            break
+        # for index, order in enumerate(orders):
+        #     sync_order(index, order)
 
-        # common.thread(rows=orders, function=sync_order)
+        common.thread(rows=orders, function=sync_order)
