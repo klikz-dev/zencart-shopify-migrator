@@ -471,24 +471,24 @@ def create_order(order, thread=None):
             shopify_order.created_at = order.order_date.isoformat()
 
         # Shipping Address
-        try:
-            shipping_address = Address.objects.get(
-                address_id=order.shipping_address_id or order.customer.default_address)
+        if order.shipping_address_id:
+            try:
+                shipping_address = Address.objects.get(address_id=order.shipping_address_id)
 
-            shopify_order.shipping_address = {
-                'first_name': shipping_address.first_name,
-                'last_name': shipping_address.last_name,
-                'company': shipping_address.company,
-                'address1': shipping_address.address1,
-                'address2': shipping_address.address2,
-                'city': shipping_address.city,
-                'province': shipping_address.state,
-                'zip': shipping_address.zip,
-                'country': shipping_address.country,
-            }
-        except Exception as e:
-            print(e)
-            pass
+                shopify_order.shipping_address = {
+                    'first_name': shipping_address.first_name,
+                    'last_name': shipping_address.last_name,
+                    'company': shipping_address.company,
+                    'address1': shipping_address.address1,
+                    'address2': shipping_address.address2,
+                    'city': shipping_address.city,
+                    'province': shipping_address.state,
+                    'zip': shipping_address.zip,
+                    'country': shipping_address.country,
+                }
+            except Exception as e:
+                print(e)
+                pass
 
         # Billing Address
         shopify_order.billing_address = {
