@@ -458,10 +458,11 @@ def create_order(order, thread=None):
         shopify_order.line_items = line_items
 
         # Costs
-        shopify_order.shipping_lines = [{
-            "title": order.shipping_method,
-            "price": order.shipping_price
-        }]
+        if not order.shipping_price < 0:
+            shopify_order.shipping_lines = [{
+                "title": order.shipping_method or "FedEx",
+                "price": order.shipping_price
+            }]
         shopify_order.tax_lines = [{
             'price': order.tax
         }]
@@ -512,13 +513,10 @@ def create_order(order, thread=None):
             shopify_order.fulfillment_status = "partial"
             shopify_order.financial_status = "paid"
         elif order.status == "Pending":
-            shopify_order.fulfillment_status = "null"
             shopify_order.financial_status = "pending"
         elif order.status == "Processing":
-            shopify_order.fulfillment_status = "null"
             shopify_order.financial_status = "paid"
         else:
-            shopify_order.fulfillment_status = "null"
             shopify_order.financial_status = "pending"
 
         # Save
