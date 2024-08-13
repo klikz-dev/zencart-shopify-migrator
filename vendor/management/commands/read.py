@@ -116,7 +116,7 @@ class Processor:
 
             for feed in tqdm(feeds):
                 try:
-                    product_id = to_int(feed['product_id'])
+                    product_id = to_text(feed['product_id'])
 
                     if product_id in existing_product_ids:
                         continue
@@ -241,7 +241,7 @@ class Processor:
         )
 
         for row in tqdm(rows):
-            product_id = to_int(row['product_id'])
+            product_id = to_text(row['product_id'])
 
             try:
                 product = Product.objects.get(product_id=product_id)
@@ -309,7 +309,7 @@ class Processor:
                 Customer.objects.values_list('customer_id', flat=True))
 
             for customer in tqdm(customers):
-                customer_id = to_text(customer['customer_id'])
+                customer_id = to_int(customer['customer_id'])
                 address_id = to_int(customer['address_id'])
 
                 if customer_id in existing_customer_ids:
