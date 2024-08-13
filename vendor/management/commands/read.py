@@ -54,10 +54,10 @@ class Processor:
         self.connection.close()
 
     def products(self):
-        Type.objects.all().delete()
-        Category.objects.all().delete()
-        Tag.objects.all().delete()
-        Product.objects.all().delete()
+        # Type.objects.all().delete()
+        # Category.objects.all().delete()
+        # Tag.objects.all().delete()
+        # Product.objects.all().delete()
 
         # Read Database
         with self.connection.cursor() as cursor:
@@ -111,8 +111,16 @@ class Processor:
             cursor.execute(sql)
             feeds = cursor.fetchall()
 
+            existing_product_ids = set(
+                Product.objects.values_list('product_id', flat=True))
+
             for feed in tqdm(feeds):
                 try:
+                    product_id = to_int(feed['product_id'])
+
+                    if product_id in existing_product_ids:
+                        continue
+
                     # Type
                     type_name = to_text(feed['type']).replace(
                         "Product - ", "").strip()
@@ -162,7 +170,7 @@ class Processor:
                     size = SIZE_MAP.get(size, size)
 
                     product = Product.objects.create(
-                        product_id=to_int(feed['product_id']),
+                        product_id=product_id,
                         name=name,
                         description=to_text(feed['description']),
 
@@ -261,8 +269,8 @@ class Processor:
             product.save()
 
     def customers(self):
-        Customer.objects.all().delete()
-        Address.objects.all().delete()
+        # Customer.objects.all().delete()
+        # Address.objects.all().delete()
 
         with self.connection.cursor() as cursor:
             sql = """
@@ -297,9 +305,15 @@ class Processor:
             cursor.execute(sql)
             customers = cursor.fetchall()
 
+            existing_customer_ids = set(
+                Customer.objects.values_list('customer_id', flat=True))
+
             for customer in tqdm(customers):
                 customer_id = to_text(customer['customer_id'])
                 address_id = to_int(customer['address_id'])
+
+                if customer_id in existing_customer_ids:
+                    continue
 
                 state = to_text(customer['state'])
                 zip = to_text(customer['zip'])

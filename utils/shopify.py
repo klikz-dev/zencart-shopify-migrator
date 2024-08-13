@@ -141,6 +141,25 @@ class Processor:
 
         return metafields
 
+    def generate_order_metafields(self, customer):
+        metafield_keys = [
+            'order_id',
+        ]
+
+        metafields = []
+        for metafield_key in metafield_keys:
+            metafield_value = getattr(customer, metafield_key)
+
+            metafield = {
+                "namespace": "custom",
+                "key": metafield_key,
+                "value": metafield_value
+            }
+
+            metafields.append(metafield)
+
+        return metafields
+
 
 def list_products(thread=None):
 
@@ -430,6 +449,8 @@ def list_orders(thread=None):
 def create_order(order, thread=None):
     processor = Processor(thread=thread)
 
+    metafields = processor.generate_order_metafields(order=order)
+
     with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
 
         shopify_order = shopify.Order()
@@ -473,7 +494,8 @@ def create_order(order, thread=None):
         # Shipping Address
         if order.shipping_address_id:
             try:
-                shipping_address = Address.objects.get(address_id=order.shipping_address_id)
+                shipping_address = Address.objects.get(
+                    address_id=order.shipping_address_id)
 
                 shopify_order.shipping_address = {
                     'first_name': shipping_address.first_name,
@@ -519,8 +541,16 @@ def create_order(order, thread=None):
         else:
             shopify_order.financial_status = "pending"
 
-        # Save
-        if not shopify_order.save():
+        # Metafields
+        if shopify_order.save():
+            for metafield in metafields:
+                shopify_metafield = shopify.Metafield()
+                shopify_metafield.namespace = metafield['namespace']
+                shopify_metafield.key = metafield['key']
+                shopify_metafield.value = metafield['value']
+                shopify_order.add_metafield(shopify_metafield)
+
+        else:
             print(shopify_order.errors.full_messages())
 
         return shopify_order
