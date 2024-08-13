@@ -141,14 +141,14 @@ class Processor:
 
         return metafields
 
-    def generate_order_metafields(self, customer):
+    def generate_order_metafields(self, order):
         metafield_keys = [
             'order_id',
         ]
 
         metafields = []
         for metafield_key in metafield_keys:
-            metafield_value = getattr(customer, metafield_key)
+            metafield_value = getattr(order, metafield_key)
 
             metafield = {
                 "namespace": "custom",
