@@ -112,8 +112,7 @@ class Product(models.Model):
     dosage = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     alc = models.CharField(max_length=200, default=None, blank=True, null=True)
-    biodynamic = models.CharField(
-        max_length=200, default=None, blank=True, null=True)
+    biodynamic = models.BooleanField(default=False)
     rating_jd = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     rating_jm = models.CharField(

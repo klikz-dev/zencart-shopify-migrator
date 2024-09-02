@@ -54,10 +54,10 @@ class Processor:
         self.connection.close()
 
     def products(self):
-        Type.objects.all().delete()
-        Category.objects.all().delete()
-        Tag.objects.all().delete()
-        Product.objects.all().delete()
+        # Type.objects.all().delete()
+        # Category.objects.all().delete()
+        # Tag.objects.all().delete()
+        # Product.objects.all().delete()
 
         # Read Database
         with self.connection.cursor() as cursor:
@@ -271,7 +271,7 @@ class Processor:
             product.disgorged = to_text(row['disgorged'])
             product.dosage = to_text(row['dosage'])
             product.alc = to_text(row['alc'])
-            product.biodynamic = to_text(row['biodynamic'])
+            product.biodynamic = to_text(row['biodynamic']) == "True"
             product.rating_jd = to_text(row['rating_jd'])
             product.rating_jm = to_text(row['rating_jm'])
             product.rating_wh = to_text(row['rating_wh'])
