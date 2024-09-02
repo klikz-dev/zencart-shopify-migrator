@@ -112,6 +112,16 @@ class Product(models.Model):
     dosage = models.CharField(
         max_length=200, default=None, blank=True, null=True)
     alc = models.CharField(max_length=200, default=None, blank=True, null=True)
+    biodynamic = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_jd = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_jm = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_wh = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    rating_vr = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
 
     # Shopify
     shopify_id = models.CharField(

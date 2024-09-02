@@ -55,6 +55,11 @@ class Processor:
             'disgorged',
             'dosage',
             'alc',
+            'biodynamic',
+            'rating_jd',
+            'rating_jm',
+            'rating_wh',
+            'rating_vr',
         ]
 
         metafields = []

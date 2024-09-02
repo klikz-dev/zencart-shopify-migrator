@@ -54,10 +54,10 @@ class Processor:
         self.connection.close()
 
     def products(self):
-        # Type.objects.all().delete()
-        # Category.objects.all().delete()
-        # Tag.objects.all().delete()
-        # Product.objects.all().delete()
+        Type.objects.all().delete()
+        Category.objects.all().delete()
+        Tag.objects.all().delete()
+        Product.objects.all().delete()
 
         # Read Database
         with self.connection.cursor() as cursor:
@@ -222,16 +222,22 @@ class Processor:
             file_path=f"{FILEDIR}/product-details.xlsx",
             column_map={
                 'product_id': 'Id',
-
-                'type': 'New "Type"',
-                'varietal': 'New: "Varietal"',
-                'region': 'New: "Region"',
-                'sub_region': 'New "Sub Region"',
-                'vineyard': 'New "Vineyard"',
-                'size': 'New: "Size"',
+                'status': 'Status',
+                'pre_arrival': 'Pre-Arrival',
+                'type': '"Type"',
+                'varietal': '"Varietal"',
+                'region': '"Region"',
+                'sub_region': '"Sub Region"',
+                'vineyard': '"Vineyard"',
+                'size': '"Size"',
                 'disgorged': 'New "Disgorged"',
                 'dosage': 'New "Dosage"',
                 'alc': 'New: "Alc %"',
+                'biodynamic': 'Biodynamic',
+                'rating_jd': 'JD',
+                'rating_jm': 'JM',
+                'rating_wh': 'WH',
+                'rating_vr': 'VR',
 
                 'image_2': 'Image #2 Location',
             },
@@ -255,6 +261,8 @@ class Processor:
                 type, _ = Type.objects.get_or_create(name=type_name)
 
             # Rewrite Name = vintage + name
+            product.status = to_text(row['status']) == "On"
+            product.pre_arrival = to_text(row['pre_arrival']) == "Pre-Arrv"
             product.type = type
             product.varietal = to_text(row['varietal'])
             product.region = to_text(row['region'])
@@ -263,6 +271,11 @@ class Processor:
             product.disgorged = to_text(row['disgorged'])
             product.dosage = to_text(row['dosage'])
             product.alc = to_text(row['alc'])
+            product.biodynamic = to_text(row['biodynamic'])
+            product.rating_jd = to_text(row['rating_jd'])
+            product.rating_jm = to_text(row['rating_jm'])
+            product.rating_wh = to_text(row['rating_wh'])
+            product.rating_vr = to_text(row['rating_vr'])
 
             product.roomset = find_file(to_text(row['image_2']), IMAGEDIR)
 
