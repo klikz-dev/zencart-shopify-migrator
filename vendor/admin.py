@@ -231,3 +231,7 @@ class PurchaseOrderAdmin(admin.ModelAdmin):
         'order_date',
         'expected_date'
     ]
+
+    list_filter = [
+        'deleted'
+    ]

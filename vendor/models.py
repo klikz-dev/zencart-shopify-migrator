@@ -276,5 +276,7 @@ class PurchaseOrder(models.Model):
     order_date = models.DateField(null=True, blank=True)
     expected_date = models.DateField(null=True, blank=True)
 
+    deleted = models.BooleanField(default=False)
+
     def __str__(self):
         return self.po_id

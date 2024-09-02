@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from utils.common import to_int, to_float, to_text, find_file, get_state_from_zip
 from utils.feed import read_excel
-from vendor.models import Type, Category, Tag, Product, Address, Customer, Order, LineItem
+from vendor.models import Type, Category, Tag, Product, Address, Customer, Order, LineItem, Vendor, PurchaseOrder
 
 MYSQL_HOSTNAME = os.getenv('MYSQL_HOSTNAME')
 MYSQL_USERNAME = os.getenv('MYSQL_USERNAME')
@@ -34,6 +34,9 @@ class Command(BaseCommand):
 
         if "orders" in options['functions']:
             processor.orders()
+
+        if "purchase-orders" in options['functions']:
+            processor.purchase_orders()
 
 
 class Processor:
@@ -486,6 +489,66 @@ class Processor:
                         product=product,
                         unit_price=order['unit_price'],
                         quantity=order['quantity'],
+                    )
+                except Exception as e:
+                    print(e)
+                    continue
+
+    def purchase_orders(self):
+        PurchaseOrder.objects.all().delete()
+        Vendor.objects.all().delete()
+
+        with self.connection.cursor() as cursor:
+            sql = """
+                    SELECT
+                        po.po_detail_id AS po_id,
+                        po.po_product_id AS product_id,
+                        po.po_product_qty AS quantity,
+                        po.po_product_received AS received,
+                        po.po_product_order_date AS order_date,
+                        po.po_product_expected_date AS expected_date,
+                        po.po_deleted AS deleted,
+
+                        poh.po_vendor_name AS vendor_name,
+                        poh.po_vendor_state AS vendor_state,
+
+                    FROM
+                        po_details po
+                    LEFT JOIN
+                        po_header poh ON po.po_header_id = poh.po_id;
+                """
+            cursor.execute(sql)
+            pos = cursor.fetchall()
+
+            for po in tqdm(pos):
+                po_id = po['po_id']
+
+                # Vendor
+                vendor, _ = Vendor.objects.get_or_create(
+                    name=po['vendor_name'],
+                    defaults={
+                        'state': po['vendor_state']
+                    }
+                )
+
+                # Product
+                try:
+                    product = Product.objects.get(product_id=po['product_id'])
+                except Product.DoesNotExist:
+                    print(f"Product {po['product_id']} does NOT exist")
+                    continue
+
+                # Create PO obj
+                try:
+                    PurchaseOrder.objects.get_or_create(
+                        po_id=po_id,
+                        vendor=vendor,
+                        product=product,
+                        quantity=to_int(po['quantity']),
+                        received=to_int(po['received']),
+                        order_date=po['order_date'],
+                        expected_date=po['expected_date'],
+                        deleted=to_text(po['deleted']) == "Y",
                     )
                 except Exception as e:
                     print(e)
