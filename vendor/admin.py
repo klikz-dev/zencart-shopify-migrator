@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Type, Tag, Product, Address, Customer, Order, LineItem, Vendor, PurchaseOrder
+from .models import Category, Type, Tag, Product, Address, Customer, Order, LineItem, Vendor, PurchaseOrder, PurchaseOrderDetail
 
 
 @admin.register(Type)
@@ -217,21 +217,54 @@ class VendorAdmin(admin.ModelAdmin):
 @admin.register(PurchaseOrder)
 class PurchaseOrderAdmin(admin.ModelAdmin):
 
-    autocomplete_fields = [
-        'vendor',
-        'product',
-    ]
+    class PODetailInline(admin.StackedInline):
+        model = PurchaseOrderDetail
+        extra = 0
+
+        list_display = [
+            'po_detail_id',
+            'product',
+            'cost',
+            'quantity',
+            'received',
+        ]
 
     list_display = [
         'po_id',
         'vendor',
-        'product',
-        'quantity',
-        'received',
+        'reference',
         'order_date',
-        'expected_date'
     ]
 
     list_filter = [
-        'deleted'
+        'vendor'
+    ]
+
+    search_fields = [
+        'po_id'
+    ]
+
+    inlines = [PODetailInline]
+
+
+@admin.register(PurchaseOrderDetail)
+class PurchaseOrderDetailAdmin(admin.ModelAdmin):
+
+    autocomplete_fields = [
+        'purchase_order',
+        'product',
+    ]
+
+    list_display = [
+        'po_detail_id',
+        'purchase_order',
+        'product',
+        'cost',
+        'quantity',
+        'received',
+    ]
+
+    search_fields = [
+        'po_detail_id',
+        'product__product_id'
     ]

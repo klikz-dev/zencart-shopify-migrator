@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from utils.common import to_int, to_float, to_text, find_file, get_state_from_zip
 from utils.feed import read_excel
-from vendor.models import Type, Category, Tag, Product, Address, Customer, Order, LineItem, Vendor, PurchaseOrder
+from vendor.models import Type, Category, Tag, Product, Address, Customer, Order, LineItem, Vendor, PurchaseOrder, PurchaseOrderDetail
 
 MYSQL_HOSTNAME = os.getenv('MYSQL_HOSTNAME')
 MYSQL_USERNAME = os.getenv('MYSQL_USERNAME')
@@ -501,16 +501,18 @@ class Processor:
         with self.connection.cursor() as cursor:
             sql = """
                     SELECT
-                        po.po_detail_id AS po_id,
+                        po.po_detail_id AS po_detail_id,
                         po.po_product_id AS product_id,
                         po.po_product_qty AS quantity,
                         po.po_product_received AS received,
-                        po.po_product_order_date AS order_date,
-                        po.po_product_expected_date AS expected_date,
+                        po.po_product_cost AS cost,
                         po.po_deleted AS deleted,
 
+                        poh.po_id AS po_id,
                         poh.po_vendor_name AS vendor_name,
                         poh.po_vendor_state AS vendor_state,
+                        poh.po_reference AS reference,
+                        poh.po_date AS order_date
 
                     FROM
                         po_details po
@@ -521,15 +523,20 @@ class Processor:
             pos = cursor.fetchall()
 
             for po in tqdm(pos):
+                po_detail_id = po['po_detail_id']
                 po_id = po['po_id']
 
+                if to_text(po['deleted']) == "Y":
+                    continue
+
                 # Vendor
-                vendor, _ = Vendor.objects.get_or_create(
-                    name=po['vendor_name'],
-                    defaults={
-                        'state': po['vendor_state']
-                    }
-                )
+                if po['vendor_name']:
+                    vendor, _ = Vendor.objects.get_or_create(
+                        name=po['vendor_name'],
+                        defaults={
+                            'state': po['vendor_state']
+                        }
+                    )
 
                 # Product
                 try:
@@ -540,15 +547,25 @@ class Processor:
 
                 # Create PO obj
                 try:
-                    PurchaseOrder.objects.get_or_create(
+                    po_obj, _ = PurchaseOrder.objects.get_or_create(
                         po_id=po_id,
                         vendor=vendor,
+                        reference=to_text(po['reference']),
+                        order_date=po['order_date']
+                    )
+                except Exception as e:
+                    print(e)
+                    continue
+
+                # Create PO Detail
+                try:
+                    PurchaseOrderDetail.objects.create(
+                        po_detail_id=po_detail_id,
+                        purchase_order=po_obj,
                         product=product,
+                        cost=to_float(po['cost']),
                         quantity=to_int(po['quantity']),
                         received=to_int(po['received']),
-                        order_date=po['order_date'],
-                        expected_date=po['expected_date'],
-                        deleted=to_text(po['deleted']) == "Y",
                     )
                 except Exception as e:
                     print(e)
