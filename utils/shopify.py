@@ -396,6 +396,8 @@ def create_customer(customer, thread=None):
 
             if 'phone' in customer_data:
                 del customer_data['phone']
+                customer.phone = None
+                customer.save()
             if 'sms_marketing_consent' in customer_data:
                 del customer_data['sms_marketing_consent']
 
@@ -512,6 +514,7 @@ def create_order(order, thread=None):
                     'province': shipping_address.state,
                     'zip': shipping_address.zip,
                     'country': shipping_address.country,
+                    'phone': shipping_address.customer.phone
                 }
             except Exception as e:
                 print(e)
