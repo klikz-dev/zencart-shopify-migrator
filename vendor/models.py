@@ -285,3 +285,5 @@ class PurchaseOrderDetail(models.Model):
 
     quantity = models.IntegerField(default=0, null=True, blank=True)
     received = models.IntegerField(default=0, null=True, blank=True)
+
+    received_date = models.DateField(null=True, blank=True)

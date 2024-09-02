@@ -262,6 +262,7 @@ class PurchaseOrderDetailAdmin(admin.ModelAdmin):
         'cost',
         'quantity',
         'received',
+        'received_date',
     ]
 
     search_fields = [

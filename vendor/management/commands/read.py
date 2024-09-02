@@ -495,6 +495,7 @@ class Processor:
                     continue
 
     def purchase_orders(self):
+        PurchaseOrderDetail.objects.all().delete()
         PurchaseOrder.objects.all().delete()
         Vendor.objects.all().delete()
 
@@ -512,12 +513,18 @@ class Processor:
                         poh.po_vendor_name AS vendor_name,
                         poh.po_vendor_state AS vendor_state,
                         poh.po_reference AS reference,
-                        poh.po_date AS order_date
+                        poh.po_date AS order_date,
+
+                        GROUP_CONCAT(por.por_date) AS received_dates
 
                     FROM
                         po_details po
                     LEFT JOIN
-                        po_header poh ON po.po_header_id = poh.po_id;
+                        po_header poh ON po.po_header_id = poh.po_id
+                    LEFT JOIN
+                        po_receipts por ON po.po_detail_id = por.por_det_id
+                    GROUP BY
+                        po.po_detail_id;
                 """
             cursor.execute(sql)
             pos = cursor.fetchall()
@@ -557,6 +564,10 @@ class Processor:
                     print(e)
                     continue
 
+                # Received Data
+                received_date = to_text(po['received_dates']).split(",")[
+                    0].split(" ")[0]
+
                 # Create PO Detail
                 try:
                     PurchaseOrderDetail.objects.create(
@@ -566,7 +577,9 @@ class Processor:
                         cost=to_float(po['cost']),
                         quantity=to_int(po['quantity']),
                         received=to_int(po['received']),
+                        received_date=received_date or None
                     )
                 except Exception as e:
                     print(e)
+                    print(po['received_dates'])
                     continue
