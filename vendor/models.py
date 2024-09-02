@@ -248,3 +248,33 @@ class LineItem(models.Model):
 
     def __str__(self):
         return self.order.customer.email
+
+
+class Vendor(models.Model):
+    name = models.CharField(max_length=200, primary_key=True)
+    state = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
+
+    def purchase_order_count(self):
+        return self.purchaseOrders.count()
+
+    def __str__(self):
+        return self.name
+
+
+class PurchaseOrder(models.Model):
+    po_id = models.IntegerField(primary_key=True)
+
+    vendor = models.ForeignKey(
+        Vendor, related_name="purchaseOrders", on_delete=models.CASCADE)
+    product = models.ForeignKey(
+        Product, related_name='purchaseOrders', on_delete=models.CASCADE, blank=False, null=False)
+
+    quantity = models.IntegerField(default=0, null=True, blank=True)
+    received = models.IntegerField(default=0, null=True, blank=True)
+
+    order_date = models.DateField(null=True, blank=True)
+    expected_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return self.po_id

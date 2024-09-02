@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Type, Tag, Product, Address, Customer, Order, LineItem
+from .models import Category, Type, Tag, Product, Address, Customer, Order, LineItem, Vendor, PurchaseOrder
 
 
 @admin.register(Type)
@@ -197,4 +197,37 @@ class LineItemAdmin(admin.ModelAdmin):
         'product',
         'unit_price',
         'quantity',
+    ]
+
+
+@admin.register(Vendor)
+class VendorAdmin(admin.ModelAdmin):
+
+    list_display = [
+        'name',
+        'state',
+        'purchase_order_count'
+    ]
+
+    search_fields = [
+        'name',
+    ]
+
+
+@admin.register(PurchaseOrder)
+class PurchaseOrderAdmin(admin.ModelAdmin):
+
+    autocomplete_fields = [
+        'vendor',
+        'product',
+    ]
+
+    list_display = [
+        'po_id',
+        'vendor',
+        'product',
+        'quantity',
+        'received',
+        'order_date',
+        'expected_date'
     ]
