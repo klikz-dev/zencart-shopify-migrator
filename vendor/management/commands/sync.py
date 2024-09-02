@@ -83,7 +83,7 @@ class Processor:
                     print(
                         f"{index}/{total} -- Product {shopify_product.id} has been created successfully.")
 
-                    shopify.update_inventory(product=product, thread=index)
+                    # shopify.update_inventory(product=product, thread=index)
                 else:
                     print(
                         f"Failed uploading - Product {product.product_id}")

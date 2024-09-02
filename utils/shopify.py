@@ -113,7 +113,7 @@ class Processor:
 
         variant_data = {
             'price': product.price,
-            'sku': f"VR-{product.product_id}",
+            'sku': product.product_id,
             'weight': product.weight,
             'weight_unit': 'lb',
             'inventory_management': "shopify" if product.track_quantity else None,

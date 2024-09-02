@@ -57,10 +57,10 @@ class Processor:
         self.connection.close()
 
     def products(self):
-        # Type.objects.all().delete()
-        # Category.objects.all().delete()
-        # Tag.objects.all().delete()
-        # Product.objects.all().delete()
+        Type.objects.all().delete()
+        Category.objects.all().delete()
+        Tag.objects.all().delete()
+        Product.objects.all().delete()
 
         # Read Database
         with self.connection.cursor() as cursor:
