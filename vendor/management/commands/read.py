@@ -522,9 +522,9 @@ class Processor:
                     LEFT JOIN
                         po_header poh ON po.po_header_id = poh.po_id
                     LEFT JOIN
-                        po_receipts por ON po.po_detail_id = por.por_det_id
+                        po_receipts por ON poh.po_id = por.por_po_id
                     GROUP BY
-                        po.po_detail_id;
+                        poh.po_id;
                 """
             cursor.execute(sql)
             pos = cursor.fetchall()
@@ -581,5 +581,4 @@ class Processor:
                     )
                 except Exception as e:
                     print(e)
-                    print(po['received_dates'])
                     continue
