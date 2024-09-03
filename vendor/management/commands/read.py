@@ -524,7 +524,7 @@ class Processor:
                     LEFT JOIN
                         po_receipts por ON poh.po_id = por.por_po_id
                     GROUP BY
-                        poh.po_id;
+                        po.po_detail_id;
                 """
             cursor.execute(sql)
             pos = cursor.fetchall()
