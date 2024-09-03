@@ -466,6 +466,7 @@ def create_order(order, thread=None):
         shopify_order.customer = {
             "id": order.customer.shopify_id
         }
+        shopify_order.phone = order.customer.phone
 
         # Line Items
         line_items = []
