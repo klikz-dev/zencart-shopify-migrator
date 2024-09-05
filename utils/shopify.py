@@ -456,7 +456,7 @@ def list_orders(thread=None):
 def create_order(order, thread=None):
     processor = Processor(thread=thread)
 
-    metafields = processor.generate_order_metafields(order=order)
+    # metafields = processor.generate_order_metafields(order=order)
 
     with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
 
@@ -550,14 +550,19 @@ def create_order(order, thread=None):
         else:
             shopify_order.financial_status = "pending"
 
+        # Order Note
+        shopify_order.note = f"Zencart Order ID: {order.order_id}"
+
         # Metafields
         if shopify_order.save():
-            for metafield in metafields:
-                shopify_metafield = shopify.Metafield()
-                shopify_metafield.namespace = metafield['namespace']
-                shopify_metafield.key = metafield['key']
-                shopify_metafield.value = metafield['value']
-                shopify_order.add_metafield(shopify_metafield)
+            # for metafield in metafields:
+            #     shopify_metafield = shopify.Metafield()
+            #     shopify_metafield.namespace = metafield['namespace']
+            #     shopify_metafield.key = metafield['key']
+            #     shopify_metafield.value = metafield['value']
+            #     shopify_order.add_metafield(shopify_metafield)
+            
+            pass
 
         else:
             print(shopify_order.errors.full_messages())
