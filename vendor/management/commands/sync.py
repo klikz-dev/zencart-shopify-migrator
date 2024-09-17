@@ -29,6 +29,9 @@ class Command(BaseCommand):
         if "orders" in options['functions']:
             processor.orders()
 
+        if "unpublish-products" in options['functions']:
+            processor.unpublish_products()
+
 
 class Processor:
     def __init__(self):
@@ -168,3 +171,6 @@ class Processor:
         #     sync_order(index, order)
 
         common.thread(rows=orders, function=sync_order)
+
+    def unpublish_products(self):
+        shopify.unpublish_products()

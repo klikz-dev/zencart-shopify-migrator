@@ -2,7 +2,7 @@ import os
 import base64
 from pathlib import Path
 import shopify
-from vendor.models import Address
+from vendor.models import Address, Product
 
 SHOPIFY_API_BASE_URL = os.getenv('SHOPIFY_API_BASE_URL')
 SHOPIFY_API_VERSION = os.getenv('SHOPIFY_API_VERSION')
@@ -227,6 +227,37 @@ def create_product(product, thread=None):
             print(shopify_product.errors.full_messages())
 
         return shopify_product
+
+
+def unpublish_products(thread=None):
+
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        shopify_products = shopify.Product.find(limit=250)
+
+        while shopify_products:
+
+            print(f"Fetched {len(shopify_products)} Products")
+
+            for shopify_product in shopify_products:
+                status = "active"
+                try:
+                    product = Product.objects.get(shopify_id=shopify_product.id)
+                    if not product.status:
+                        status = "archived"
+                except Product.DoesNotExist:
+                    status = "archived"
+
+                shopify_product.status = status
+                shopify_product.save()
+
+                print(f"Updated {shopify_product.handle} status to {status}")
+
+            shopify_products = shopify_products.has_next_page(
+            ) and shopify_products.next_page() or []
+
 
 
 def delete_product(id, thread=None):
