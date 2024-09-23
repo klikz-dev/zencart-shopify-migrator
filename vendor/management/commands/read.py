@@ -182,7 +182,7 @@ class Processor:
                         price=to_float(feed['price']),
 
                         quantity=to_int(feed['quantity']),
-                        weight=to_int(feed['weight']),
+                        weight=to_float(feed['weight']),
 
                         status=to_int(feed['status']) == 1,
                         track_quantity=to_int(feed['track_quantity']) == 1,
@@ -225,16 +225,15 @@ class Processor:
             file_path=f"{FILEDIR}/product-details.xlsx",
             column_map={
                 'product_id': 'Id',
-                'status': 'Status',
-                'pre_arrival': 'Pre-Arrival',
-                'type': '"Type"',
-                'varietal': '"Varietal"',
-                'region': '"Region"',
-                'sub_region': '"Sub Region"',
-                'vineyard': '"Vineyard"',
-                'size': '"Size"',
-                'disgorged': 'New "Disgorged"',
-                'dosage': 'New "Dosage"',
+                'type': 'Type',
+                'varietal': 'Varietal',
+                'region': 'Region',
+                'sub_region': 'Sub Region',
+                'vineyard': 'Vineyard',
+                'weight': 'Weight',
+                'size': 'Size',
+                'disgorged': 'Disgorged',
+                'dosage': 'Dosage',
                 'alc': 'New: "Alc %"',
                 'biodynamic': 'Biodynamic',
                 'rating_jd': 'JD',
@@ -263,14 +262,13 @@ class Processor:
             if type_name:
                 type, _ = Type.objects.get_or_create(name=type_name)
 
-            # Rewrite Name = vintage + name
-            product.status = to_text(row['status']) == "On"
-            product.pre_arrival = to_text(row['pre_arrival']) == "Pre-Arrv"
             product.type = type
             product.varietal = to_text(row['varietal'])
             product.region = to_text(row['region'])
             product.sub_region = to_text(row['sub_region'])
             product.vineyard = to_text(row['vineyard'])
+            product.weight = to_float(row['weight'])
+            product.size = to_text(row['weight'])
             product.disgorged = to_text(row['disgorged'])
             product.dosage = to_text(row['dosage'])
             product.alc = to_text(row['alc'])
