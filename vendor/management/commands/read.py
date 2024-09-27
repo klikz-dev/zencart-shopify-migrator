@@ -283,8 +283,8 @@ class Processor:
             product.save()
 
     def customers(self):
-        # Customer.objects.all().delete()
-        # Address.objects.all().delete()
+        Customer.objects.all().delete()
+        Address.objects.all().delete()
 
         with self.connection.cursor() as cursor:
             sql = """
