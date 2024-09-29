@@ -26,6 +26,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         processor = Processor()
 
+        if "check" in options['functions']:
+            processor.check()
+
         if "products" in options['functions']:
             processor.products()
 
@@ -55,6 +58,39 @@ class Processor:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.connection.close()
+
+    def check(self):
+        with self.connection.cursor() as cursor:
+            sql = """
+                SELECT
+                    null
+                FROM
+                    products;
+                """
+            cursor.execute(sql)
+            feeds = cursor.fetchall()
+            print(f"{len(feeds)} Products")
+
+            sql = """
+                SELECT
+                    null
+                FROM
+                    customers;
+                """
+            cursor.execute(sql)
+            feeds = cursor.fetchall()
+            print(f"{len(feeds)} Customers")
+
+            sql = """
+                SELECT
+                    null
+                FROM
+                    orders;
+                """
+            cursor.execute(sql)
+            feeds = cursor.fetchall()
+            print(f"{len(feeds)} Orders")
+
 
     def products(self):
         Type.objects.all().delete()
