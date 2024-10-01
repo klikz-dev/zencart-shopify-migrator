@@ -93,10 +93,10 @@ class Processor:
 
 
     def products(self):
-        Type.objects.all().delete()
-        Category.objects.all().delete()
-        Tag.objects.all().delete()
-        Product.objects.all().delete()
+        # Type.objects.all().delete()
+        # Category.objects.all().delete()
+        # Tag.objects.all().delete()
+        # Product.objects.all().delete()
 
         # Read Database
         with self.connection.cursor() as cursor:
@@ -150,15 +150,15 @@ class Processor:
             cursor.execute(sql)
             feeds = cursor.fetchall()
 
-            existing_product_ids = set(
-                Product.objects.values_list('product_id', flat=True))
+            # existing_product_ids = set(
+            #     Product.objects.values_list('product_id', flat=True))
 
             for feed in tqdm(feeds):
                 try:
                     product_id = to_text(feed['product_id'])
 
-                    if product_id in existing_product_ids:
-                        continue
+                    # if product_id in existing_product_ids:
+                    #     continue
 
                     # Type
                     type_name = to_text(feed['type']).replace(
@@ -208,44 +208,49 @@ class Processor:
                     }
                     size = SIZE_MAP.get(size, size)
 
-                    product = Product.objects.create(
-                        product_id=product_id,
-                        name=name,
-                        description=to_text(feed['description']),
+                    try:
+                        product = Product.objects.get(product_id=product_id)
+                        product.size = size
+                        product.save()
+                    except Product.DoesNotExist:
+                        product = Product.objects.create(
+                            product_id=product_id,
+                            name=name,
+                            description=to_text(feed['description']),
 
-                        type=type,
+                            type=type,
 
-                        price=to_float(feed['price']),
+                            price=to_float(feed['price']),
 
-                        quantity=to_int(feed['quantity']),
-                        weight=to_float(feed['weight']),
+                            quantity=to_int(feed['quantity']),
+                            weight=to_float(feed['weight']),
 
-                        status=to_int(feed['status']) == 1,
-                        track_quantity=to_int(feed['track_quantity']) == 1,
+                            status=to_int(feed['status']) == 1,
+                            track_quantity=to_int(feed['track_quantity']) == 1,
 
-                        thumbnail=f"https://vinsrare.com/images/{
-                            to_text(feed['image'])}",
+                            thumbnail=f"https://vinsrare.com/images/{
+                                to_text(feed['image'])}",
 
-                        min_order_qty=to_int(feed['min_order_qty']),
-                        order_increment=to_int(feed['order_increment']),
+                            min_order_qty=to_int(feed['min_order_qty']),
+                            order_increment=to_int(feed['order_increment']),
 
-                        pre_arrival=to_text(feed['pre_arrival']) == "Y",
+                            pre_arrival=to_text(feed['pre_arrival']) == "Y",
 
-                        warehouse_location=to_text(feed['warehouse_location']),
-                        year=year,
-                        country=to_text(feed['country']),
-                        appellation=to_text(feed['appellation']),
-                        rating_ws=to_text(feed['ws']),
-                        rating_wa=to_text(feed['wa']),
-                        rating_vm=to_text(feed['vm']),
-                        rating_bh=to_text(feed['bh']),
-                        rating_jg=to_text(feed['jg']),
-                        rating_js=to_text(feed['js']),
-                        additional_notes=to_text(feed['additional_notes']),
-                        size=size,
-                        wine_searcher=to_text(feed['wine_searcher']) == "Y",
-                        cellar_tracker_id=to_text(feed['cellar_tracker_id']),
-                    )
+                            warehouse_location=to_text(feed['warehouse_location']),
+                            year=year,
+                            country=to_text(feed['country']),
+                            appellation=to_text(feed['appellation']),
+                            rating_ws=to_text(feed['ws']),
+                            rating_wa=to_text(feed['wa']),
+                            rating_vm=to_text(feed['vm']),
+                            rating_bh=to_text(feed['bh']),
+                            rating_jg=to_text(feed['jg']),
+                            rating_js=to_text(feed['js']),
+                            additional_notes=to_text(feed['additional_notes']),
+                            size=size,
+                            wine_searcher=to_text(feed['wine_searcher']) == "Y",
+                            cellar_tracker_id=to_text(feed['cellar_tracker_id']),
+                        )
 
                     for category in categories:
                         product.categories.add(category)
@@ -304,7 +309,7 @@ class Processor:
             product.sub_region = to_text(row['sub_region'])
             product.vineyard = to_text(row['vineyard'])
             product.weight = to_float(row['weight'])
-            product.size = to_text(row['weight'])
+            product.size = to_text(row['size'])
             product.disgorged = to_text(row['disgorged'])
             product.dosage = to_text(row['dosage'])
             product.alc = to_text(row['alc'])

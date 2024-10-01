@@ -229,6 +229,32 @@ def create_product(product, thread=None):
         return shopify_product
 
 
+def update_product(product, thread=None):
+
+    processor = Processor(thread=thread)
+
+    metafields = processor.generate_product_metafields(product=product)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        shopify_product = shopify.Product.find(product.shopify_id)
+
+        if not shopify_product:
+            print(f"Product with ID {product.shopify_id} does not exist.")
+            return None
+
+        existing_metafields = shopify_product.metafields()
+
+        for metafield in metafields:
+            for existing_metafield in existing_metafields:
+                if existing_metafield.key == metafield['key']:
+                    existing_metafield.value = metafield['value']
+                    existing_metafield.save()
+                    break
+
+        return shopify_product
+
+
 def unpublish_products(thread=None):
 
     processor = Processor(thread=thread)
@@ -250,10 +276,13 @@ def unpublish_products(thread=None):
                 except Product.DoesNotExist:
                     status = "archived"
 
-                shopify_product.status = status
-                shopify_product.save()
+                try:
+                    shopify_product.status = status
+                    shopify_product.save()
 
-                print(f"Updated {shopify_product.handle} status to {status}")
+                    print(f"Updated {shopify_product.handle} status to {status}")
+                except Exception as e:
+                    print(e)
 
             shopify_products = shopify_products.has_next_page(
             ) and shopify_products.next_page() or []

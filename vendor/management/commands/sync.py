@@ -69,27 +69,39 @@ class Processor:
 
     def products(self):
 
-        products = Product.objects.filter(shopify_id=None)
+        products = Product.objects.filter(status=True)
         total = len(products)
 
         def sync_product(index, product):
             try:
-                shopify_product = shopify.create_product(
-                    product=product, thread=index)
+                if not product.shopify_id:
+                    shopify_product = shopify.create_product(
+                        product=product, thread=index)
 
-                if shopify_product.id:
-                    product.shopify_id = shopify_product.id
-                    product.save()
+                    if shopify_product.id:
+                        product.shopify_id = shopify_product.id
+                        product.save()
 
-                    self.image(product)
+                        self.image(product)
 
-                    print(
-                        f"{index}/{total} -- Product {shopify_product.id} has been created successfully.")
+                        print(
+                            f"{index}/{total} -- Product {shopify_product.id} has been created successfully.")
 
-                    # shopify.update_inventory(product=product, thread=index)
+                        # shopify.update_inventory(product=product, thread=index)
+                    else:
+                        print(
+                            f"Failed uploading - Product {product.product_id}")
+
                 else:
-                    print(
-                        f"Failed uploading - Product {product.product_id}")
+                    shopify_product = shopify.update_product(
+                        product=product, thread=index)
+
+                    if shopify_product.id:
+                        print(
+                            f"{index}/{total} -- Product {shopify_product.id} has been updated successfully.")
+                    else:
+                        print(
+                            f"Failed updating - Product {product.product_id}")
 
             except Exception as e:
                 print(e)
