@@ -2,7 +2,7 @@ import os
 import base64
 from pathlib import Path
 import shopify
-from vendor.models import Address, Product
+from vendor.models import Address, Product, Order
 
 SHOPIFY_API_BASE_URL = os.getenv('SHOPIFY_API_BASE_URL')
 SHOPIFY_API_VERSION = os.getenv('SHOPIFY_API_VERSION')
@@ -255,7 +255,7 @@ def update_product(product, thread=None):
         return shopify_product
 
 
-def unpublish_products(thread=None):
+def product_status(thread=None):
 
     processor = Processor(thread=thread)
 
@@ -263,18 +263,31 @@ def unpublish_products(thread=None):
 
         shopify_products = shopify.Product.find(limit=250)
 
+        active = 0
+        draft = 0
+        archived = 0
+
         while shopify_products:
 
             print(f"Fetched {len(shopify_products)} Products")
 
             for shopify_product in shopify_products:
-                status = "active"
                 try:
                     product = Product.objects.get(shopify_id=shopify_product.id)
                     if not product.status:
-                        status = "archived"
+                        lineItems = product.lineItems.filter(order__status__in=["Partial Shipment", "Pending", "Processing"])
+                        if len(lineItems) > 0:
+                            status = "draft"
+                            draft += 1
+                        else:
+                            status = "archived"
+                            archived += 1
+                    else:
+                        status = "active"
+                        active += 1
                 except Product.DoesNotExist:
                     status = "archived"
+                    archived += 1
 
                 try:
                     shopify_product.status = status
@@ -286,6 +299,8 @@ def unpublish_products(thread=None):
 
             shopify_products = shopify_products.has_next_page(
             ) and shopify_products.next_page() or []
+
+        print(f"Active: {active}, Draft: {draft}, Archived: {archived}")
 
 
 
