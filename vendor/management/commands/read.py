@@ -441,7 +441,9 @@ class Processor:
 
                         op.products_id AS product_id,
                         op.final_price as unit_price,
-                        op.products_quantity AS quantity
+                        op.products_quantity AS quantity,
+                        op.products_quantity_shipped AS shipped,
+                        op.products_date_shipped AS shipped_date
                     FROM
                         orders o
                     LEFT JOIN
@@ -528,6 +530,8 @@ class Processor:
                         product=product,
                         unit_price=order['unit_price'],
                         quantity=order['quantity'],
+                        shipped=order['shipped'],
+                        shipped_date=order['shipped_date'],
                     )
                 except Exception as e:
                     print(e)
@@ -547,6 +551,7 @@ class Processor:
                         po.po_product_received AS received,
                         po.po_product_cost AS cost,
                         po.po_deleted AS deleted,
+                        po.po_product_expected_date AS expected_date,
 
                         poh.po_id AS po_id,
                         poh.po_vendor_name AS vendor_name,
@@ -616,6 +621,7 @@ class Processor:
                         cost=to_float(po['cost']),
                         quantity=to_int(po['quantity']),
                         received=to_int(po['received']),
+                        expected_date=po['expected_date'],
                         received_date=received_date or None
                     )
                 except Exception as e:

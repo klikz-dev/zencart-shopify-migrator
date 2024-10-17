@@ -2,6 +2,7 @@ import os
 import base64
 from pathlib import Path
 import shopify
+import json
 from vendor.models import Address, Product, Order
 
 SHOPIFY_API_BASE_URL = os.getenv('SHOPIFY_API_BASE_URL')
@@ -613,10 +614,8 @@ def create_order(order, thread=None):
             shopify_order.fulfillment_status = "restocked"
             shopify_order.financial_status = "refunded"
         elif order.status == "Delivered":
-            shopify_order.fulfillment_status = "fulfilled"
             shopify_order.financial_status = "paid"
         elif order.status == "Partial Shipment":
-            shopify_order.fulfillment_status = "partial"
             shopify_order.financial_status = "paid"
         elif order.status == "Pending":
             shopify_order.financial_status = "pending"
@@ -643,6 +642,98 @@ def create_order(order, thread=None):
             print(shopify_order.errors.full_messages())
 
         return shopify_order
+
+    
+def fulfill_order(order, thread=None):
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        graphQL = shopify.GraphQL()
+
+        fo = [fo for fo in shopify.FulfillmentOrders.find(order_id=order.shopify_id) if fo.status == "open" or fo.status == "in_progress"][0]
+
+        mutation = """
+            mutation fulfillmentCreateV2($fulfillment: FulfillmentV2Input!) {
+                fulfillmentCreateV2(fulfillment: $fulfillment) {
+                    fulfillment {
+                        id
+                        status
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }
+        """
+
+        fulfillmentOrderLineItems = []
+        shipped_date = None
+        for foLineItem in fo.line_items:
+            variant = shopify.Variant.find(foLineItem.variant_id)
+
+            for lineItem in order.lineItems.all():
+                sku = lineItem.product.product_id
+
+                if lineItem.shipped > 0 and sku == variant.sku:
+                    fulfillmentOrderLineItems.append({
+                        'id': f"gid://shopify/FulfillmentOrderLineItem/{foLineItem.id}",
+                        'quantity': lineItem.shipped
+                    })
+                    shipped_date = lineItem.shipped_date
+                    break
+
+        if len(fulfillmentOrderLineItems) > 0:
+
+            graphql_response = graphQL.execute(mutation, variables={
+                "fulfillment": {
+                    "lineItemsByFulfillmentOrder": {
+                        "fulfillmentOrderId": f"gid://shopify/FulfillmentOrder/{fo.id}",
+                        "fulfillmentOrderLineItems": fulfillmentOrderLineItems
+                    },
+                    "notifyCustomer": False,
+                }
+            })
+            response = json.loads(graphql_response)
+
+            fulfillment = response['data']['fulfillmentCreateV2']['fulfillment']
+
+            print(fulfillment)
+
+            # fulfillment Event
+            mutation = """
+                mutation fulfillmentEventCreate($fulfillmentEvent: FulfillmentEventInput!) {
+                    fulfillmentEventCreate(fulfillmentEvent: $fulfillmentEvent) {
+                        fulfillmentEvent {
+                            id
+                            status
+                            message
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+            """
+            graphql_response = graphQL.execute(mutation, variables={
+                "fulfillmentEvent": {
+                    "fulfillmentId": fulfillment['id'],
+                    "status": "DELIVERED",
+                    "happenedAt": shipped_date.isoformat() if shipped_date else None
+                }
+            })
+            response = json.loads(graphql_response)
+
+            fulfillmentEvent = response['data']['fulfillmentEventCreate']['fulfillmentEvent']
+
+            print(fulfillmentEvent)
+
+            return fulfillment
+
+        else:
+            return None
 
 
 def delete_order(id, thread=None):

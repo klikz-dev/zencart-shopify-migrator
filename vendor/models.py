@@ -245,6 +245,8 @@ class LineItem(models.Model):
 
     unit_price = models.FloatField(default=0, null=False, blank=False)
     quantity = models.IntegerField(default=1, null=False, blank=False)
+    shipped = models.IntegerField(default=1, null=False, blank=False)
+    shipped_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.order.customer.email
@@ -286,4 +288,5 @@ class PurchaseOrderDetail(models.Model):
     quantity = models.IntegerField(default=0, null=True, blank=True)
     received = models.IntegerField(default=0, null=True, blank=True)
 
+    expected_date = models.DateField(null=True, blank=True)
     received_date = models.DateField(null=True, blank=True)

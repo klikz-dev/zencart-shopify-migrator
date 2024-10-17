@@ -152,6 +152,8 @@ class OrderAdmin(admin.ModelAdmin):
             'product',
             'unit_price',
             'quantity',
+            'shipped',
+            'shipped_date',
         ]
 
     autocomplete_fields = [
@@ -197,6 +199,8 @@ class LineItemAdmin(admin.ModelAdmin):
         'product',
         'unit_price',
         'quantity',
+        'shipped',
+        'shipped_date',
     ]
 
 
@@ -262,6 +266,7 @@ class PurchaseOrderDetailAdmin(admin.ModelAdmin):
         'cost',
         'quantity',
         'received',
+        'expected_date',
         'received_date',
     ]
 
