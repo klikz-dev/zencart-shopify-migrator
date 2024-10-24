@@ -167,6 +167,14 @@ class Processor:
         orders = Order.objects.filter(shopify_id=None)
         total = len(orders)
 
+        def fulfill_order(index, order):
+            shopify_fulfillment = shopify.fulfill_order(order=order, thread=index)
+
+            if shopify_fulfillment:
+                print(f"Successfully Fulfilled order {order.order_id}")
+            else:
+                print(f"Failed fulfilling {order.order_id}")
+
         def sync_order(index, order):
 
             shopify_order = shopify.create_order(
@@ -177,7 +185,7 @@ class Processor:
                 order.save()
                 print(f"{index}/{total} -- Synced order {shopify_order.id}")
 
-                self.fulfill_order(index, order)
+                fulfill_order(index, order)
             else:
                 print(f"Error syncing order {order.order_id}")
 
@@ -189,11 +197,3 @@ class Processor:
 
     def product_status(self):
         shopify.product_status()
-
-    def fulfill_order(self, index, order):
-        shopify_fulfillment = shopify.fulfill_order(order=order, thread=index)
-
-        if shopify_fulfillment:
-            print(f"Successfully Fulfilled order {order.order_id}")
-        else:
-            print(f"Failed fulfilling {order.order_id}")
