@@ -4,7 +4,7 @@ import pymysql.cursors
 from pathlib import Path
 from tqdm import tqdm
 
-from utils.common import to_int, to_float, to_text, find_file, get_state_from_zip
+from utils.common import to_int, to_float, to_text, to_date, find_file, get_state_from_zip
 from utils.feed import read_excel
 from vendor.models import Type, Category, Tag, Product, Address, Customer, Order, LineItem, Vendor, PurchaseOrder, PurchaseOrderDetail
 
@@ -531,7 +531,7 @@ class Processor:
                         unit_price=order['unit_price'],
                         quantity=order['quantity'],
                         shipped=order['shipped'],
-                        shipped_date=order['shipped_date'],
+                        shipped_date=to_date(order['shipped_date']),
                     )
                 except Exception as e:
                     print(e)
