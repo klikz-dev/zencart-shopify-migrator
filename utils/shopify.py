@@ -529,6 +529,16 @@ def list_orders(thread=None):
         return all_shopify_order_ids
 
 
+def get_order(id, thread=None):
+
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        shopify_order = shopify.Order.find(id)
+        return shopify_order
+
+
 def create_order(order, thread=None):
     processor = Processor(thread=thread)
 

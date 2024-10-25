@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from collections import defaultdict
 import csv
 from vendor.models import Vendor, Order, PurchaseOrderDetail
+from utils import shopify
 
 FILEDIR = f"{Path(__file__).resolve().parent.parent}/files"
 
@@ -22,7 +23,7 @@ class Command(BaseCommand):
         if "purchase-orders" in options['functions']:
             processor.purchase_orders()
 
-        if "shipment" in options['functions']:
+        if "shipments" in options['functions']:
             processor.order_shipments()
 
 
@@ -151,10 +152,14 @@ class Processor:
             "warehouse": "Default Warehouse",
         })
 
-        orders = Order.objects.all().filter(order_id=41639)
+        orders = Order.objects.all()
         for order in orders:
+            shopify_order = shopify.get_order(order.shopify_id)
+            print(shopify_order.order_number)
+
             lineItems = order.lineItems.all()
             for lineItem in lineItems:
+
                 sku = lineItem.product.product_id
                 quantity = lineItem.shipped
                 
@@ -162,13 +167,12 @@ class Processor:
                     key = (order.order_id, sku)
                     if combined_data[key]['po'] == "":
                         combined_data[key].update({
-                            "po": order.order_id,
+                            "po": shopify_order.order_number,
                             "service": order.shipping_method,
                             "cost": order.shipping_price,
                             "sku": sku,
                             "quantity": quantity,
                         })
-
 
         for item in combined_data.values():
             data.append([
