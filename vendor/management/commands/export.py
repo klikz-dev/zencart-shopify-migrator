@@ -152,10 +152,10 @@ class Processor:
             "warehouse": "Default Warehouse",
         })
 
-        orders = Order.objects.all()
-        for order in orders:
-            shopify_order = shopify.get_order(order.shopify_id)
-            print(shopify_order.order_number)
+        orders = Order.objects.exclude(shopify_id=None).exclude(shopify_order_number=None)
+        total = len(orders)
+        for index, order in enumerate(orders):
+            print(f"{index}/{total}: {order.shopify_order_number}")
 
             lineItems = order.lineItems.all()
             for lineItem in lineItems:
@@ -167,7 +167,7 @@ class Processor:
                     key = (order.order_id, sku)
                     if combined_data[key]['po'] == "":
                         combined_data[key].update({
-                            "po": shopify_order.order_number,
+                            "po": order.shopify_order_number,
                             "service": order.shipping_method,
                             "cost": order.shipping_price,
                             "sku": sku,

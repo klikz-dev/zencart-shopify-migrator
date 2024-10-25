@@ -182,8 +182,9 @@ class Processor:
 
             if shopify_order.id:
                 order.shopify_id = shopify_order.id
+                order.shopify_order_number = shopify_order.order_number
                 order.save()
-                print(f"{index}/{total} -- Synced order {shopify_order.id}")
+                print(f"{index}/{total} -- Synced order {order.shopify_order_number}")
 
                 fulfill_order(index, order)
             else:

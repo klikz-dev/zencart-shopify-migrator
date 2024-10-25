@@ -231,6 +231,8 @@ class Order(models.Model):
 
     shopify_id = models.CharField(
         max_length=200, default=None, null=True, blank=True)
+    shopify_order_number = models.CharField(
+        max_length=200, default=None, null=True, blank=True)
 
     def __str__(self):
         return self.customer.email
