@@ -152,7 +152,8 @@ class Processor:
             "warehouse": "Default Warehouse",
         })
 
-        orders = Order.objects.exclude(shopify_id=None).exclude(shopify_order_number=None)
+        orders = Order.objects.exclude(
+            shopify_id=None).exclude(shopify_order_number=None)
         total = len(orders)
         for index, order in enumerate(orders):
             print(f"{index}/{total}: {order.shopify_order_number}")
@@ -162,13 +163,13 @@ class Processor:
 
                 sku = lineItem.product.product_id
                 quantity = lineItem.shipped
-                
+
                 if sku is not None and quantity > 0:
                     key = (order.order_id, sku)
                     if combined_data[key]['po'] == "":
                         combined_data[key].update({
                             "po": order.shopify_order_number,
-                            "service": order.shipping_method,
+                            "service": order.shipping_method or "Ground",
                             "cost": order.shipping_price,
                             "sku": sku,
                             "quantity": quantity,
