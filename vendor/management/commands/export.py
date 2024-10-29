@@ -24,7 +24,8 @@ class Command(BaseCommand):
             processor.purchase_orders()
 
         if "shipments" in options['functions']:
-            processor.order_shipments()
+            processor.order_shipments(status="Delivered")
+            processor.order_shipments(status="Partial Shipment")
 
 
 class Processor:
@@ -125,7 +126,7 @@ class Processor:
             writer = csv.writer(file)
             writer.writerows(data)
 
-    def order_shipments(self):
+    def order_shipments(self, status):
         data = []
         data.append([
             "Store",
@@ -152,7 +153,7 @@ class Processor:
             "warehouse": "Default Warehouse",
         })
 
-        orders = Order.objects.exclude(
+        orders = Order.objects.filter(status=status).exclude(
             shopify_id=None).exclude(shopify_order_number=None)
         total = len(orders)
         for index, order in enumerate(orders):
@@ -188,6 +189,6 @@ class Processor:
                 item['warehouse'],
             ])
 
-        with open(f"{FILEDIR}/order-shipments.csv", mode='w', newline='') as file:
+        with open(f"{FILEDIR}/{status}.csv", mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(data)
