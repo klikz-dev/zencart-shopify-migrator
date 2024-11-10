@@ -21,3 +21,9 @@ python3 manage.py sync customers
 python3 manage.py sync orders
 python3 manage.py sync orders
 python3 manage.py sync orders
+
+python3 manage.py sync product-status
+
+python3 manage.py export suppliers
+python3 manage.py export purchase-orders
+python3 manage.py export shipments

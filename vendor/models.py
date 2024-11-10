@@ -122,6 +122,10 @@ class Product(models.Model):
     rating_vr = models.CharField(
         max_length=200, default=None, blank=True, null=True)
 
+    depth = models.FloatField(default=0, null=False, blank=False)
+    width = models.FloatField(default=0, null=False, blank=False)
+    height = models.FloatField(default=0, null=False, blank=False)
+
     # Shopify
     shopify_id = models.CharField(
         max_length=200, default=None, blank=True, null=True)

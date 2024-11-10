@@ -61,6 +61,10 @@ class Processor:
             'rating_jm',
             'rating_wh',
             'rating_vr',
+
+            'depth',
+            'width',
+            'height',
         ]
 
         metafields = []

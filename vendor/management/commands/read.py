@@ -93,10 +93,10 @@ class Processor:
 
 
     def products(self):
-        # Type.objects.all().delete()
-        # Category.objects.all().delete()
-        # Tag.objects.all().delete()
-        # Product.objects.all().delete()
+        Type.objects.all().delete()
+        Category.objects.all().delete()
+        Tag.objects.all().delete()
+        Product.objects.all().delete()
 
         # Read Database
         with self.connection.cursor() as cursor:
@@ -282,6 +282,10 @@ class Processor:
                 'rating_wh': 'WH',
                 'rating_vr': 'VR',
 
+                'depth': 'Depth',
+                'width': 'Width',
+                'height': 'Height',
+
                 'image_2': 'Image #2 Location',
             },
             exclude=[],
@@ -318,6 +322,10 @@ class Processor:
             product.rating_jm = to_text(row['rating_jm'])
             product.rating_wh = to_text(row['rating_wh'])
             product.rating_vr = to_text(row['rating_vr'])
+
+            product.depth = to_float(row['depth'])
+            product.width = to_float(row['width'])
+            product.height = to_float(row['height'])
 
             product.roomset = find_file(to_text(row['image_2']), IMAGEDIR)
 
