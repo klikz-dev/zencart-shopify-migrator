@@ -3,7 +3,6 @@ from django.core.management.base import BaseCommand
 from collections import defaultdict
 import csv
 from vendor.models import Vendor, Order, PurchaseOrderDetail
-from utils import shopify
 
 FILEDIR = f"{Path(__file__).resolve().parent.parent}/files"
 
@@ -22,6 +21,9 @@ class Command(BaseCommand):
 
         if "purchase-orders" in options['functions']:
             processor.purchase_orders()
+
+        if "purchase-orders-received" in options['functions']:
+            processor.purchase_orders_received()
 
         if "shipments" in options['functions']:
             processor.order_shipments(status="Delivered")
@@ -82,7 +84,7 @@ class Processor:
             "quantity": 0,
             "rate": 0,
             "sku": "",
-            "received": "",
+            "received": 0,
             "memo": "",
             "arrival_date": "",
             "status": "",
@@ -123,6 +125,61 @@ class Processor:
             ])
 
         with open(f"{FILEDIR}/purchase-orders.csv", mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(data)
+
+    def purchase_orders_received(self):
+        data = []
+        data.append([
+            "PO #",
+            "Type",
+            "Item SKU or Kit name",
+            "Quantity",
+            "Warehouse",
+            "Location",
+            "Receive Quantity",
+            "Serial #"
+        ])
+
+        # Create a dictionary to hold combined results
+        combined_data = defaultdict(lambda: {
+            "po": "",
+            "type": "Item",
+            "sku": "",
+            "quantity": 0,
+            "warehouse": "Default Warehouse",
+            "location": "",
+            "received": 0,
+            "serial": "",            
+        })
+
+        details = PurchaseOrderDetail.objects.all()
+        for detail in details:
+            if detail.quantity > 0 and detail.received > 0:
+                key = (detail.purchase_order.po_id, detail.product.product_id)
+
+                if combined_data[key]['po'] == "":
+                    combined_data[key].update({
+                        "po": detail.purchase_order.po_id,
+                        "sku": detail.product.product_id,
+                        "received": detail.received,
+                    })
+
+                combined_data[key]['quantity'] += detail.quantity
+
+        for item in combined_data.values():
+            data.append([
+                item['po'],
+                item['type'],
+                item['sku'],
+                item['quantity'],
+                item['warehouse'],
+                item['location'],
+                item['received'],
+                item['serial'],
+            ])
+
+        with open(f"{FILEDIR}/purchase-orders-received.csv", mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(data)
 
