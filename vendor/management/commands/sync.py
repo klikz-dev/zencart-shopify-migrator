@@ -69,7 +69,7 @@ class Processor:
 
     def products(self):
 
-        products = Product.objects.filter(status=True)
+        products = Product.objects.filter(shopify_id=None)
         total = len(products)
 
         def sync_product(index, product):
