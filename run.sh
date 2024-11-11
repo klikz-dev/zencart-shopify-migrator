@@ -1,16 +1,18 @@
-python3 manage.py delete orders
-python3 manage.py delete orders
-python3 manage.py delete orders
-python3 manage.py delete customers
-python3 manage.py delete customers
-python3 manage.py delete customers
-python3 manage.py delete products
-python3 manage.py delete products
-python3 manage.py delete products
+# mysql -u root -p --default-character-set=utf8mb4 --force vinsrare < vendor/management/files/source.sql
 
-python3 manage.py read customers
-python3 manage.py read products
-python3 manage.py read orders
+# python3 manage.py delete orders
+# python3 manage.py delete orders
+# python3 manage.py delete orders
+# python3 manage.py delete customers
+# python3 manage.py delete customers
+# python3 manage.py delete customers
+# python3 manage.py delete products
+# python3 manage.py delete products
+# python3 manage.py delete products
+
+# python3 manage.py read customers
+# python3 manage.py read products
+# python3 manage.py read orders
 
 python3 manage.py sync products
 python3 manage.py sync products

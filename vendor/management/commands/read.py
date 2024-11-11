@@ -275,7 +275,7 @@ class Processor:
                 'size': 'Size',
                 'disgorged': 'Disgorged',
                 'dosage': 'Dosage',
-                'alc': 'New: "Alc %"',
+                'alc': 'Alc %',
                 'biodynamic': 'Biodynamic',
                 'rating_jd': 'JD',
                 'rating_jm': 'JM',
