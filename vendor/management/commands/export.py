@@ -2,7 +2,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 from collections import defaultdict
 import csv
-from vendor.models import Vendor, Order, PurchaseOrderDetail
+from vendor.models import Vendor, Order, PurchaseOrderDetail, Product
 
 FILEDIR = f"{Path(__file__).resolve().parent.parent}/files"
 
@@ -24,6 +24,9 @@ class Command(BaseCommand):
 
         if "purchase-orders-received" in options['functions']:
             processor.purchase_orders_received()
+
+        if "on-hand-inventory" in options['functions']:
+            processor.on_hand_inventory()
 
         if "shipments" in options['functions']:
             processor.order_shipments(status="Delivered")
@@ -150,7 +153,7 @@ class Processor:
             "warehouse": "Default Warehouse",
             "location": "",
             "received": 0,
-            "serial": "",            
+            "serial": "",
         })
 
         details = PurchaseOrderDetail.objects.all()
@@ -180,6 +183,75 @@ class Processor:
             ])
 
         with open(f"{FILEDIR}/purchase-orders-received.csv", mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(data)
+
+    def on_hand_inventory(self):
+        data = []
+        data.append([
+            "SKU",
+            "On Hand Inventory",
+            "PO Received",
+            "PO Incoming",
+            "Order Shipped",
+            "Order Reserved"
+        ])
+
+        # Create a dictionary to hold combined results
+        combined_data = defaultdict(lambda: {
+            "sku": "",
+            "on_hand": 0,
+            "po_receipts": 0,
+            "po_incoming": 0,
+            "order_shipped": 0,
+            "order_reserved": 0,
+        })
+
+        products = Product.objects.all()
+        for product in products:
+
+            on_hand = 0
+            po_receipts = 0
+            po_incoming = 0
+            order_shipped = 0
+            order_reserved = 0
+
+            lineItems = product.lineItems.all()
+            for lineItem in lineItems:
+                order_shipped += lineItem.shipped
+                order_reserved += (lineItem.quantity - lineItem.shipped)
+
+            purchaseOrderDetails = product.purchaseOrderDetails.all()
+            for purchaseOrderDetail in purchaseOrderDetails:
+                po_receipts += purchaseOrderDetail.received
+                po_incoming += (purchaseOrderDetail.quantity -
+                                purchaseOrderDetail.received)
+
+            on_hand = po_receipts - order_shipped
+
+            key = product.product_id
+
+            if combined_data[key]['sku'] == "":
+                combined_data[key].update({
+                    "sku": key,
+                    "on_hand": on_hand,
+                    "po_receipts": po_receipts,
+                    "po_incoming": po_incoming,
+                    "order_shipped": order_shipped,
+                    "order_reserved": order_reserved,
+                })
+
+        for item in combined_data.values():
+            data.append([
+                item['sku'],
+                item['on_hand'],
+                item['po_receipts'],
+                item['po_incoming'],
+                item['order_shipped'],
+                item['order_reserved'],
+            ])
+
+        with open(f"{FILEDIR}/on-hand-inventory.csv", mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(data)
 
