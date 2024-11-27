@@ -629,7 +629,7 @@ class Processor:
                         cost=to_float(po['cost']),
                         quantity=to_int(po['quantity']),
                         received=to_int(po['received']),
-                        expected_date=po['expected_date'],
+                        expected_date=po['expected_date'] if po['expected_date'] != "0000-00-00" else None,
                         received_date=received_date or None
                     )
                 except Exception as e:
