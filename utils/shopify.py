@@ -193,6 +193,17 @@ def list_products(thread=None):
         return all_shopify_product_ids
 
 
+def get_product(product_id, thread=None):
+
+    processor = Processor(thread=thread)
+
+    with shopify.Session.temp(SHOPIFY_API_BASE_URL, SHOPIFY_API_VERSION, processor.api_token):
+
+        shopify_product = shopify.Product.find(product_id)
+
+        return shopify_product
+    
+
 def create_product(product, thread=None):
 
     processor = Processor(thread=thread)

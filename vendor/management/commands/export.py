@@ -3,8 +3,15 @@ from django.core.management.base import BaseCommand
 from collections import defaultdict
 import csv
 from vendor.models import Vendor, Order, PurchaseOrderDetail, Product
+from utils import shopify
+import requests
+import os
+import json
+import time
 
 FILEDIR = f"{Path(__file__).resolve().parent.parent}/files"
+
+ENITURE_API_KEY = os.getenv('ENITURE_API_KEY')
 
 
 class Command(BaseCommand):
@@ -31,6 +38,9 @@ class Command(BaseCommand):
         if "shipments" in options['functions']:
             processor.order_shipments(status="Delivered")
             processor.order_shipments(status="Partial Shipment")
+
+        if "eniture" in options['functions']:
+            processor.eniture()
 
 
 class Processor:
@@ -321,3 +331,59 @@ class Processor:
         with open(f"{FILEDIR}/{status}.csv", mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(data)
+
+    def eniture(self):
+        products = Product.objects.filter(weight__gt=0).filter(width__gt=0)
+        print(len(products))
+
+        for product in products:
+            
+            shopify_product = shopify.get_product(product.shopify_id)
+            product_id = shopify_product.id
+            variant_id = shopify_product.variants[0].id
+
+            if product_id == 8815497543919:
+                continue
+
+            if product_id and variant_id:
+
+                # Check Current
+                url = f"https://s-web-api.eniture.com/api/products/{product_id}/{variant_id}"
+                print(url)
+
+                headers = {
+                    'Accept': 'application/json',
+                    'X-Shopify-Shop': '5bebb7-54.myshopify.com',
+                    'Authorization': f"Bearer {ENITURE_API_KEY}"
+                }
+                payload={}
+
+                response = requests.request("GET", url, headers=headers, data=payload)
+
+                print(response.text)
+
+                # Upload
+                url = "https://s-web-api.eniture.com/api/products"
+
+                payload = json.dumps({
+                    "data": {
+                        "productId": product_id,
+                        "variantId": variant_id,
+                        "attributes": {
+                            "weight": product.weight,
+                            "width": product.width,
+                            "height": product.height,
+                            "length": product.depth
+                        }
+                    }
+                })
+                headers = {
+                    'X-Shopify-Shop': '5bebb7-54.myshopify.com',
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {ENITURE_API_KEY}'
+                }
+
+                response = requests.request("POST", url, headers=headers, data=payload)
+                print(response.status_code)
+
+                time.sleep(1)
