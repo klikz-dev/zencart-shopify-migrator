@@ -357,7 +357,7 @@ class Processor:
                         "productId": product_id,
                         "variantId": variant_id,
                         "attributes": {
-                            "quoteMethod": "L",
+                            "quoteMethod": "S",
                             "weight": weight,
                             "width": width,
                             "height": height,
