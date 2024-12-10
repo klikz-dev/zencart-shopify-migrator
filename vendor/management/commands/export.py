@@ -333,7 +333,7 @@ class Processor:
             writer.writerows(data)
 
     def eniture(self):
-        products = Product.objects.filter(weight__gt=0).filter(width__gt=0)
+        products = Product.objects.filter(status=True)
         print(len(products))
 
         for product in products:
@@ -342,14 +342,39 @@ class Processor:
             product_id = shopify_product.id
             variant_id = shopify_product.variants[0].id
 
-            if product_id == 8815497543919:
-                continue
-
             if product_id and variant_id:
 
-                # Check Current
+                # Upload
+                url = "https://s-web-api.eniture.com/api/products"
+
+                weight = 3.12 if product.weight < 0.01 else product.weight
+                width = 4 if product.width < 0.01 else product.width
+                height = 4 if product.height < 0.01 else product.height
+                depth = 13 if product.depth < 0.01 else product.depth
+
+                payload = json.dumps({
+                    "data": {
+                        "productId": product_id,
+                        "variantId": variant_id,
+                        "attributes": {
+                            "quoteMethod": "L",
+                            "weight": weight,
+                            "width": width,
+                            "height": height,
+                            "length": depth
+                        }
+                    }
+                })
+                headers = {
+                    'X-Shopify-Shop': '5bebb7-54.myshopify.com',
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {ENITURE_API_KEY}'
+                }
+
+                requests.request("POST", url, headers=headers, data=payload)
+                
+                # Check Status
                 url = f"https://s-web-api.eniture.com/api/products/{product_id}/{variant_id}"
-                print(url)
 
                 headers = {
                     'Accept': 'application/json',
@@ -361,29 +386,5 @@ class Processor:
                 response = requests.request("GET", url, headers=headers, data=payload)
 
                 print(response.text)
-
-                # Upload
-                url = "https://s-web-api.eniture.com/api/products"
-
-                payload = json.dumps({
-                    "data": {
-                        "productId": product_id,
-                        "variantId": variant_id,
-                        "attributes": {
-                            "weight": product.weight,
-                            "width": product.width,
-                            "height": product.height,
-                            "length": product.depth
-                        }
-                    }
-                })
-                headers = {
-                    'X-Shopify-Shop': '5bebb7-54.myshopify.com',
-                    'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {ENITURE_API_KEY}'
-                }
-
-                response = requests.request("POST", url, headers=headers, data=payload)
-                print(response.status_code)
 
                 time.sleep(1)
