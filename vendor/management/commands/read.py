@@ -93,10 +93,10 @@ class Processor:
 
 
     def products(self):
-        Type.objects.all().delete()
-        Category.objects.all().delete()
-        Tag.objects.all().delete()
-        Product.objects.all().delete()
+        # Type.objects.all().delete()
+        # Category.objects.all().delete()
+        # Tag.objects.all().delete()
+        # Product.objects.all().delete()
 
         # Read Database
         with self.connection.cursor() as cursor:
@@ -150,15 +150,15 @@ class Processor:
             cursor.execute(sql)
             feeds = cursor.fetchall()
 
-            # existing_product_ids = set(
-            #     Product.objects.values_list('product_id', flat=True))
+            existing_product_ids = set(
+                Product.objects.values_list('product_id', flat=True))
 
             for feed in tqdm(feeds):
                 try:
                     product_id = to_text(feed['product_id'])
 
-                    # if product_id in existing_product_ids:
-                    #     continue
+                    if product_id in existing_product_ids:
+                        continue
 
                     # Type
                     type_name = to_text(feed['type']).replace(
@@ -210,8 +210,6 @@ class Processor:
 
                     try:
                         product = Product.objects.get(product_id=product_id)
-                        product.size = size
-                        product.save()
                     except Product.DoesNotExist:
                         product = Product.objects.create(
                             product_id=product_id,
@@ -252,11 +250,11 @@ class Processor:
                             cellar_tracker_id=to_text(feed['cellar_tracker_id']),
                         )
 
-                    for category in categories:
-                        product.categories.add(category)
+                        for category in categories:
+                            product.categories.add(category)
 
-                    for tag in tags:
-                        product.tags.add(tag)
+                        for tag in tags:
+                            product.tags.add(tag)
 
                 except Exception as e:
                     print(f"{feed['product_id']}: {str(e)}")
@@ -332,8 +330,8 @@ class Processor:
             product.save()
 
     def customers(self):
-        Customer.objects.all().delete()
-        Address.objects.all().delete()
+        # Customer.objects.all().delete()
+        # Address.objects.all().delete()
 
         with self.connection.cursor() as cursor:
             sql = """
@@ -423,8 +421,8 @@ class Processor:
                     continue
 
     def orders(self):
-        Order.objects.all().delete()
-        LineItem.objects.all().delete()
+        # Order.objects.all().delete()
+        # LineItem.objects.all().delete()
 
         with self.connection.cursor() as cursor:
             sql = """
@@ -462,8 +460,14 @@ class Processor:
             cursor.execute(sql)
             orders = cursor.fetchall()
 
+            existing_order_ids = set(
+                Order.objects.values_list('order_id', flat=True))
+
             for order in tqdm(orders):
                 order_id = order['order_id']
+
+                if order_id in existing_order_ids:
+                    continue
 
                 # Customer
                 try:
